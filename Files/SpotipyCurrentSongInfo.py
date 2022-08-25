@@ -1,10 +1,12 @@
 #credit to bingbong for that 204 error help
 #stealing my code is really lame, so don't do that (lmao just do it anyway this is garbage probably)(its getting better tho)
+from distutils.command.config import config
 import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrowser
 from tkinter import W
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 from datetime import datetime
+from configparser import ConfigParser
 global songlog, json_resp, last_track_id, access_token, sleeptime, errorcount, debuginfo, extended_debug_info, SPOTIFY_GET_CURRENT_TRACK_URL,progresstype
 global clipboard, silenterrors, starttimestamp, version_no
 Token = open('settings.txt', "r")
@@ -16,16 +18,24 @@ os.system("mode con cols=70 lines=13")
 cursor.hide()
 #Configuration and storage variables
 starttimestamp = str(datetime.fromtimestamp(datetime.now().timestamp()).strftime("%m-%d-%Y, %H-%M-%S"))
-extended_debug_info = False
-debuginfo = True
-errorcount = 0
-sleeptime = 0
-version_no = "1.0.4.69"
-progresstype = "Duration"
-clipboard = False
+config_object = ConfigParser()
+
+config_object['CONFVARS'] = {
+	"debuginfo": True,
+	"extended_debug_info": True,
+	"progresstype": "Duration",
+	"sleeptime": 0,
+	"clipboard": False,
+	"silenterrors": True,
+	"version_no": "1.0.5",
+}
+config_object.read("config.ini")
+conf_vars = config_object['CONFVARS']
+with open('config.ini', 'w') as conf:
+    config_object.write(conf)
+
 SPOTIFY_GET_CURRENT_TRACK_URL = 'https://api.spotify.com/v1/me/player'
 keyboard = Controller()
-silenterrors = True
 last_track_id = None
 print("Startup Complete")
 print("Starting Program")
@@ -159,7 +169,7 @@ def get_api_information(access_token):
 		print("There is currently no song playing.")
 		print("\n\n\n\n\n\n\n")
 		print("SpotiPy Current Song Info.")
-		print("Ver " + version_no)
+		print("Ver " + conf_vars['version_no'])
 		print("Waiting for music to play...")
 		while response.status_code == 204:
 			response = requests.get(
@@ -167,7 +177,7 @@ def get_api_information(access_token):
 			headers={
 				"Authorization": f"Bearer {access_token}"
 			})
-			time.sleep(sleeptime)
+			time.sleep(int(conf_vars['sleeptime']))
 		get_api_information(access_token)
 	global json_resp
 	json_resp = response.json()
@@ -177,7 +187,7 @@ def get_api_information(access_token):
 	artists = [artist for artist in json_resp['item']['artists']]
 	album = json_resp['item']['album']['name']
 	link = json_resp['item']['external_urls']['spotify']
-	if progresstype == "Remainder": progress = "-" + str(datetime.fromtimestamp((json_resp['item']['duration_ms']/1000) - (json_resp['progress_ms']/1000)).strftime('%M:%S'))
+	if conf_vars['progresstype'] == "Remainder": progress = "-" + str(datetime.fromtimestamp((json_resp['item']['duration_ms']/1000) - (json_resp['progress_ms']/1000)).strftime('%M:%S'))
 	else: progress = str(datetime.fromtimestamp(json_resp['progress_ms'] / 1000).strftime('%M:%S'))
 	duration = str(datetime.fromtimestamp(json_resp['item']['duration_ms'] / 1000).strftime('%M:%S'))
 	playing = json_resp['is_playing']
@@ -224,6 +234,8 @@ def eastereggs():
 			os.system("title IN NEW YORK I MILLY ROCK")
 		case "7K1HH9OC6nZlJqrGnr8r1g":
 			os.system("title Real Rx")
+		case "6M14BiCN00nOsba4JaYsHW":
+			os.system("title The Spongebob Squarepants Movie (2004)")
 
 def main():
 	global current_api_info
@@ -272,8 +284,8 @@ def main():
 	if current_api_info['albumtype'] == "album": print("Album: " + current_api_info['album'])
 	if current_api_info['albumtype'] != "album": print("Album: " + current_api_info['album'] + " [" + current_api_info['albumtype'].capitalize() + "]")
 	
-	if progresstype == "Remainder": print("Duration: " + current_api_info['duration'] + " / " + current_api_info['progress'])
-	if progresstype != "Remainder": print("Duration: " + current_api_info['progress'] + " / " + current_api_info['duration'])
+	if conf_vars['progresstype'] == "Remainder": print("Duration: " + current_api_info['duration'] + " / " + current_api_info['progress'])
+	if conf_vars['progresstype'] != "Remainder": print("Duration: " + current_api_info['progress'] + " / " + current_api_info['duration'])
  
 	if current_api_info['explicit']: print("Explicit: Yes")
 	if not current_api_info['explicit']: print("Explicit: No")
@@ -283,13 +295,12 @@ def main():
 	print("TrackID: " + current_track_id) 
 	print("Last Song Change: " + str(datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime("%m-%d-%Y, %H:%M:%S")))
 	
-	if clipboard: pyperclip.copy(current_api_info['track_name'] + " By " + current_api_info['artists'])
+	if conf_vars['clipboard']: pyperclip.copy(current_api_info['track_name'] + " By " + current_api_info['artists'])
 	
 	#do not touch this please
-	time.sleep(sleeptime)
+	time.sleep(int(conf_vars['sleeptime']))
 
 
 if __name__ == '__main__': 
-	#CL4P-TP, start bootup sequence
 	while True:
 		main()
