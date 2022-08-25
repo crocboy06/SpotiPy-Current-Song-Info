@@ -1,9 +1,5 @@
 #credit to bingbong for that 204 error help
 #stealing my code is really lame, so don't do that (lmao just do it anyway this is garbage probably)(its getting better tho)
-from distutils.log import error
-from pyexpat import version_info
-from re import A
-from tracemalloc import start
 import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrowser
 from tkinter import W
 from pynput import keyboard
