@@ -2,19 +2,13 @@
 #stealing my code is really lame, so don't do that (lmao just do it anyway this is garbage probably)(its getting better tho)
 from distutils.command.config import config
 import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrowser
-from tkinter import W
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 from datetime import datetime
 from configparser import ConfigParser
-from pynput import keyboard
-from pynput.keyboard import Key, Controller
 global conf_vars
 global json_resp, last_track_id, access_token,SPOTIFY_GET_CURRENT_TRACK_URL
 #Place functions here
-#WHY THE FUCK DOESNT TOKENREFRESHER COLLAPSE?
-#NO FOR FUCKING FORREAL WHY?!?!?
-#nvm got it
 def tokenrefresher():
 	global access_token
 	keyboard = Controller()
@@ -25,9 +19,9 @@ def tokenrefresher():
 	except subprocess.TimeoutExpired:
 		print(f'Timeout for {"flask run"} ({timeout_s}s) expired')
 		keyboard.press(Key.ctrl)
-		keyboard.press(W)
+		keyboard.press("W")
 		keyboard.release(Key.ctrl)
-		keyboard.release(W)
+		keyboard.release("W")
 	Token = open('settings.txt', "r")
 	Token.seek(0)
 	ACCESS_TOKEN = Token.read()
