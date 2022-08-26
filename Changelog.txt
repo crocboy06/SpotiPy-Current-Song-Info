@@ -1,4 +1,0 @@
-v1.0.1 Code Simplification + Silent 401 Errors (var silenterrors)
-v1.0.2 Version Bump + Error cooldown decreased
-v1.0.3 Major code cleanup, switch statements used to replace if-else. might as well make this v1.1 but nah
-v1.0.4 Logs every song listened to, doesn't care about looped songs. Find your logs in files/logs/
