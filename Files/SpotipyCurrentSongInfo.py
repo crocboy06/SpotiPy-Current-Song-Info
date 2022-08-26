@@ -7,14 +7,16 @@ from pynput import keyboard
 from pynput.keyboard import Key, Controller
 from datetime import datetime
 from configparser import ConfigParser
+from pynput import keyboard
+from pynput.keyboard import Key, Controller
 global conf_vars
-global songlog, json_resp, last_track_id, access_token, sleeptime, debuginfo, extended_debug_info, SPOTIFY_GET_CURRENT_TRACK_URL,progresstype
-global clipboard, silenterrors, starttimestamp, version_no
+global json_resp, last_track_id, access_token,SPOTIFY_GET_CURRENT_TRACK_URL
 #Place functions here
+#WHY THE FUCK DOESNT TOKENREFRESHER COLLAPSE?
+#NO FOR FUCKING FORREAL WHY?!?!?
+#nvm got it
 def tokenrefresher():
 	global access_token
-	from pynput import keyboard
-	from pynput.keyboard import Key, Controller
 	keyboard = Controller()
 	timeout_s = 3  # how many seconds to wait 
 	try:
@@ -32,36 +34,6 @@ def tokenrefresher():
 	Token.close
 	access_token = ACCESS_TOKEN
 	os.system("cls")
-
-
-os.system("mode con cols=70 lines=13")
-cursor.hide()
-starttimestamp = str(datetime.fromtimestamp(datetime.now().timestamp()).strftime("%m-%d-%Y, %H-%M-%S"))
-
-config_object = ConfigParser()
-config_object.read("config.ini")
-conf_vars = config_object["CONFVARS"]
-
-Token = open('settings.txt', "r")
-Token.seek(0)
-conf_vars['access_token'] = access_token = Token.read()
-Token.close
-ACCESS_TOKEN = access_token
-SPOTIFY_GET_CURRENT_TRACK_URL = 'https://api.spotify.com/v1/me/player'
-keyboard = Controller()
-last_track_id = None
-print("Startup Complete")
-print("Starting Program")
-#TESTING VVVVVV
-print(conf_vars['version_no'])
-#TESTING ^^^^^^
-
-if conf_vars['logging'] == True:
-	print("Logging Enabled")
-	time.sleep(20)
-	songlog = open("logs/" + starttimestamp + ".txt", "w+")
-	songlog.write("SONG LOG FOR SESSION")
-	songlog.close()
 
 def errorfinder():
 	global ACCESS_TOKEN
@@ -113,7 +85,6 @@ def errorfinder():
 		print("Retrying in 1 second.")
 		time.sleep(1)
 		get_api_information(ACCESS_TOKEN)
-
 
 def get_api_information(access_token):
 	response = requests.get(
@@ -261,6 +232,38 @@ def main():
 	#do not touch this please
 	time.sleep(int(conf_vars['sleeptime']))
 
+
+os.system("mode con cols=70 lines=13")
+cursor.hide()
+
+config_object = ConfigParser()
+config_object.read("config.ini")
+conf_vars = config_object["CONFVARS"]
+
+Token = open('settings.txt', "r")
+Token.seek(0)
+conf_vars['access_token'] = access_token = Token.read()
+Token.close
+
+#is this needed? 
+ACCESS_TOKEN = access_token
+
+#move dis to config
+SPOTIFY_GET_CURRENT_TRACK_URL = 'https://api.spotify.com/v1/me/player'
+
+#test neccessity of this
+last_track_id = None
+
+if conf_vars['logging'] == True:
+	print("Logging Enabled")
+	starttimestamp = str(datetime.fromtimestamp(datetime.now().timestamp()).strftime("%m-%d-%Y, %H-%M-%S"))
+	time.sleep(20)
+	songlog = open("logs/" + starttimestamp + ".txt", "w+")
+	songlog.write("SONG LOG FOR SESSION")
+	songlog.close()
+
+print("Startup Complete")
+print("Starting Program")
 
 if __name__ == '__main__': 
 	while True:
