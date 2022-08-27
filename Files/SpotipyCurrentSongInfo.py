@@ -19,9 +19,9 @@ def tokenrefresher():
 	except subprocess.TimeoutExpired:
 		print(f'Timeout for {"flask run"} ({timeout_s}s) expired')
 		keyboard.press(Key.ctrl)
-		keyboard.press("W")
+		keyboard.press(Key.W)
 		keyboard.release(Key.ctrl)
-		keyboard.release("W")
+		keyboard.release(Key.W)
 	Token = open('settings.txt', "r")
 	Token.seek(0)
 	ACCESS_TOKEN = Token.read()
