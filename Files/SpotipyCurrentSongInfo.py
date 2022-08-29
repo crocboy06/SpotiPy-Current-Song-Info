@@ -6,6 +6,7 @@ from pynput import keyboard
 from pynput.keyboard import Key, Controller
 from datetime import datetime
 from configparser import ConfigParser
+from tkinter import W
 global conf_vars
 global json_resp, last_track_id, access_token,SPOTIFY_GET_CURRENT_TRACK_URL
 #Place functions here
@@ -19,9 +20,9 @@ def tokenrefresher():
 	except subprocess.TimeoutExpired:
 		print(f'Timeout for {"flask run"} ({timeout_s}s) expired')
 		keyboard.press(Key.ctrl)
-		keyboard.press(Key.W)
+		keyboard.press(W)
 		keyboard.release(Key.ctrl)
-		keyboard.release(Key.W)
+		keyboard.release(W)
 	Token = open('settings.txt', "r")
 	Token.seek(0)
 	ACCESS_TOKEN = Token.read()
@@ -221,7 +222,7 @@ def main():
 	print("TrackID: " + current_track_id) 
 	print("Last Song Change: " + str(datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime("%m-%d-%Y, %H:%M:%S")))
 	
-	#if conf_vars['clipboard']: pyperclip.copy(current_api_info['track_name'] + " By " + current_api_info['artists'])
+	if conf_vars['clipboard'] == True: pyperclip.copy(current_api_info['track_name'] + " By " + current_api_info['artists'])
 	
 	#do not touch this please
 	time.sleep(int(conf_vars['sleeptime']))
