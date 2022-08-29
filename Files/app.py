@@ -4,6 +4,7 @@ from turtle import title
 from flask import Flask, request, url_for, session, redirect, send_from_directory
 import spotipy, requests, time, os
 from spotipy.oauth2 import SpotifyOAuth
+from configparser import ConfigParser
 app = Flask(__name__)
 
 app.secret_key = "FUCKINGPASSWORD"
@@ -26,13 +27,6 @@ def skip():
     return redirect('/currentlyPlaying')
 
 
-@app.route('/sad')
-def stoutstreet():
-    global token_info
-    spotify_play_url = ""
-    response = requests.post(
-        "https://api.spotify.com/v1/me/player/queue?uri=spotify%3Atrack%3A5VZD8pGkJY9D4JVEaF6kEP&device_id=0d1841b0976bae2a3a310dd74c0f3df354899bc8 -H Accept: application/json -H Content-Type: application/json -H Authorization: Bearer " + token_info['access_token']
-    )
 @app.route('/runitback')
 def replay():
     global token_info
@@ -109,9 +103,12 @@ def get_token():
     return token_info
 
 def save_token_to_spotipycurrentsonginfo():
-    tokentosave = token_info['access_token']
-    f = open('settings.txt', "w+")
-    f.write(tokentosave)
+    config_object = ConfigParser()
+    config_object.read("config.ini")
+    conf_vars = config_object["CONFVARS"]
+    conf_vars['access_token'] = token_info['access_token']
+    with open('config.ini', 'w') as conf:
+        config_object.write(conf)
 
 def create_spotify_oauth():
     return SpotifyOAuth(

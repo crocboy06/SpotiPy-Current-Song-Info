@@ -1,6 +1,7 @@
 #credit to bingbong for that 204 error help
 #stealing my code is really lame, so don't do that (lmao just do it anyway this is garbage probably)(its getting better tho)
 from distutils.command.config import config
+from re import A
 import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrowser
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
@@ -23,10 +24,9 @@ def tokenrefresher():
 		keyboard.press(W)
 		keyboard.release(Key.ctrl)
 		keyboard.release(W)
-	Token = open('settings.txt', "r")
-	Token.seek(0)
-	ACCESS_TOKEN = Token.read()
-	Token.close
+	conf_vars['access_token'] = ACCESS_TOKEN
+	with open('config.ini', 'w') as conf:
+		config_object.write(conf)
 	access_token = ACCESS_TOKEN
 	os.system("cls")
 
@@ -72,11 +72,9 @@ def errorfinder():
 				tokenrefresher()
 				print("Access Token Set")
 				print("Successfully refreshed token.")
-				Token = open('settings.txt', "r")
-				Token.seek(0)
-				ACCESS_TOKEN = Token.read()
-				Token.close
-				access_token = ACCESS_TOKEN
+				access_token = conf_vars['access_token']
+				ACCESS_TOKEN = access_token
+				
 		print("Retrying in 1 second.")
 		time.sleep(1)
 		get_api_information(ACCESS_TOKEN)
@@ -85,7 +83,7 @@ def get_api_information(access_token):
 	response = requests.get(
 		SPOTIFY_GET_CURRENT_TRACK_URL,
 		headers={
-			"Authorization": f"Bearer {access_token}"
+			"Authorization": f"Bearer {conf_vars['access_token']}"
 		})
 	if response.status_code == 204:
 		os.system("cls")
@@ -162,6 +160,10 @@ def eastereggs():
 			os.system("title Real Rx")
 		case "6M14BiCN00nOsba4JaYsHW":
 			os.system("title The Spongebob Squarepants Movie (2004)")
+		case "7rkYrxNHxXv2c7X9C5sQxZ":
+			os.system("title ALL I SEE IS BROKE AHH HATING AHH")
+		case "3REWLq2J5vzUs4OX0XzSih":
+			os.system("title ON THIS X STILL YEAH BOOT UP EVERY NIGHT")
 
 def main():
 	global current_api_info
@@ -235,10 +237,7 @@ config_object = ConfigParser()
 config_object.read("config.ini")
 conf_vars = config_object["CONFVARS"]
 
-Token = open('settings.txt', "r")
-Token.seek(0)
-conf_vars['access_token'] = access_token = Token.read()
-Token.close
+access_token = conf_vars['access_token']
 
 #is this needed? 
 ACCESS_TOKEN = access_token
