@@ -24,13 +24,10 @@ def tokenrefresher():
 		keyboard.press(W)
 		keyboard.release(Key.ctrl)
 		keyboard.release(W)
-	conf_vars['access_token'] = ACCESS_TOKEN
-	with open('config.ini', 'w') as conf:
-		config_object.write(conf)
 	config_object.read("config.ini")
 	access_token = config_object["CONFVARS"]
 	access_token = access_token['access_token']
-	access_token = ACCESS_TOKEN
+	#access_token = ACCESS_TOKEN
 	os.system("cls")
 
 def errorfinder():
@@ -76,7 +73,6 @@ def errorfinder():
 				print("Access Token Set")
 				print("Successfully refreshed token.")
 				access_token = conf_vars['access_token']
-				ACCESS_TOKEN = access_token
 		print("Retrying in 1 second.")
 		time.sleep(1)
 		get_api_information(ACCESS_TOKEN)
