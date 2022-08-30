@@ -27,7 +27,6 @@ def tokenrefresher():
 	config_object.read("config.ini")
 	access_token = config_object["CONFVARS"]
 	access_token = access_token['access_token']
-	#access_token = ACCESS_TOKEN
 	os.system("cls")
 
 def errorfinder():
@@ -60,14 +59,17 @@ def errorfinder():
 		match json_resp['error']['status']:
 			case 429:
 				#API Rate print removed. Tis gay and unneccesary
-				if conf_vars['sleeptime'] > 5:
+				if int(conf_vars['sleeptime']) > 5:
 					os.system("cls")
 					print("Repeated API Rate limit errors, please refresh your token, and try again later.")
 					quit()
-				conf_vars['sleeptime'] += 1
+				slt = int(conf_vars['sleeptime'])
+				slt += 1
+				conf_vars['sleeptime'] = str(slt)
 				with open('config.ini', 'w') as conf:
 					config_object.write(conf)
 			case 401:
+				os.system("title Refreshing Token...")
 				os.system("cls")
 				tokenrefresher()
 				print("Access Token Set")
