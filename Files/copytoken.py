@@ -1,6 +1,10 @@
+import configparser
+from distutils.command.config import config
 import pyperclip
-Token = open('settings.txt', "r")
-Token.seek(0)
-ACCESS_TOKEN = Token.read()
-Token.close
-pyperclip.copy(ACCESS_TOKEN)
+from configparser import ConfigParser
+config_object = ConfigParser()
+config_object.read("config.ini")
+conf_vars = config_object["CONFVARS"]
+
+access_token = conf_vars['access_token']
+pyperclip.copy(access_token)
