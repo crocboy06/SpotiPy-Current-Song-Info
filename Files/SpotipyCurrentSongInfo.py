@@ -224,7 +224,7 @@ def main():
 	print("TrackID: " + current_track_id) 
 	print("Last Song Change: " + str(datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime("%m-%d-%Y, %H:%M:%S")))
 	
-	if conf_vars['clipboard'] == True: pyperclip.copy(current_api_info['track_name'] + " By " + current_api_info['artists'])
+	if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " By " + current_api_info['artists'])
 	
 	#do not touch this please
 	time.sleep(int(conf_vars['sleeptime']))
