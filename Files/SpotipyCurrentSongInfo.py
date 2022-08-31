@@ -164,7 +164,7 @@ def eastereggs():
 			os.system("title ALL I SEE IS BROKE AHH HATING AHH")
 		case "3REWLq2J5vzUs4OX0XzSih":
 			os.system("title ON THIS X STILL YEAH BOOT UP EVERY NIGHT")
-
+#I Growl By cherry<3 I Growl By cherry<3I Growl By cherry<3
 def main():
 	global current_api_info
 	global last_track_id
@@ -179,7 +179,7 @@ def main():
 			songlog.write("\n")
 			songlog.write(current_api_info['id'])
 			songlog.close()
-			last_track_id = current_track_id
+	last_track_id = current_track_id
 		
 
 	#Please, someone make this a switch statement.
