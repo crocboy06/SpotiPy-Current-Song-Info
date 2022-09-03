@@ -81,7 +81,7 @@ def errorfinder():
 
 def get_api_information(access_token):
 	response = requests.get(
-		SPOTIFY_GET_CURRENT_TRACK_URL,
+		conf_vars['SPOTIFY_GET_CURRENT_TRACK_URL'],
 		headers={
 			"Authorization": f"Bearer {conf_vars['access_token']}"
 		})
@@ -120,6 +120,7 @@ def get_api_information(access_token):
 	volume = json_resp['device']['volume_percent']
 	albumtype = json_resp['item']['album']['album_type']
 	clock = json_resp['timestamp']
+	devtype = json_resp['device']['type']
 
 	current_api_info = {
 		"id": track_id,
@@ -136,6 +137,7 @@ def get_api_information(access_token):
 		"volume": volume,
 		"albumtype": albumtype,
 		"clock": clock,
+		"devtype": devtype,
 	}
 
 	return current_api_info
@@ -180,8 +182,7 @@ def main():
 			songlog.write(current_api_info['id'])
 			songlog.close()
 	last_track_id = current_track_id
-		
-
+	
 	#Please, someone make this a switch statement.
 	if "(" in current_api_info['artists']:
 		os.system("title Currently Playing Track")
@@ -204,10 +205,16 @@ def main():
 	os.system("cls")
 	print("                         ♪ Now Playing ♪                              ")
 	
-	print("Playback Device: " + current_api_info['devicename'] + " @ " + str(current_api_info['volume']) + "% Volume")
+	match current_api_info['devtype']:
+		case "Smartphone":
+			print("Pb Device: " + current_api_info['devicename'] + " (Smartphone) @ " + str(current_api_info['volume']) + "% Volume")
+		case "Computer":
+			print("Pb Device: " + current_api_info['devicename'] + " (Computer) @ " + str(current_api_info['volume']) + "% Volume")
+		case "Tablet":
+			print("Pb Device: " + current_api_info['devicename'] + " (Tablet) @ " + str(current_api_info['volume']) + "% Volume")
 
-	if current_api_info['playing']: print("Playback Status: Playing")
-	if not current_api_info['playing']: print("Playback Status: Paused")
+	if current_api_info['playing']: print("Pb Status: Playing")
+	if not current_api_info['playing']: print("Pb Status: Paused")
 	
 	print("Artist(s): " + current_api_info['artists'])
 	print("Song: " + current_api_info['track_name'])
@@ -222,7 +229,7 @@ def main():
 	if not current_api_info['explicit']: print("Explicit: No")
 	
 	print("Released: " + current_api_info['release_date'])
-	print("Play it Here: " + current_api_info['link'])
+	if conf_vars['tracklink'] == "True": print("Play it Here: " + current_api_info['link'])
 	print("TrackID: " + current_track_id) 
 	print("Last Song Change: " + str(datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime("%m-%d-%Y, %H:%M:%S")))
 	
@@ -231,16 +238,17 @@ def main():
 	time.sleep(int(conf_vars['sleeptime']))
 
 
-os.system("mode con cols=70 lines=13")
-cursor.hide()
-
 config_object = ConfigParser()
 config_object.read("config.ini")
 conf_vars = config_object["CONFVARS"]
 
 access_token = conf_vars['access_token']
 
-#is this needed? 
+if conf_vars['tracklink'] == "False": os.system("mode con cols=70 lines=12")
+else: os.system("mode con cols=70 lines=13")
+cursor.hide()
+
+#is this needed? YES.
 ACCESS_TOKEN = access_token
 
 #move dis to config

@@ -59,7 +59,6 @@ def redirectPage():
     token_info = sp_oauth.get_access_token(code)
     session[TOKEN_INFO] = token_info
     return redirect('/refreshtoken')
-    return "you ass got redirected foo"
 
 @app.route('/currentlyPlaying')
 def currentlyPlaying():
@@ -71,9 +70,9 @@ def currentlyPlaying():
         redirect("https://google.com")
     sp = spotipy.Spotify(auth=token_info['access_token'])
     return sp.current_playback()
-    return 'some buuuuuuulshit'
 
 def quesecoloautacacaFART():
+    global token_info
     sp_oauth = create_spotify_oauth()
     token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
     save_token_to_spotipycurrentsonginfo()
