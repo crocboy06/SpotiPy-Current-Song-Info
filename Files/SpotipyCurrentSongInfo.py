@@ -86,20 +86,24 @@ def get_api_information(access_token):
 			"Authorization": f"Bearer {conf_vars['access_token']}"
 		})
 	if response.status_code == 204:
-		os.system("cls")
-		os.system("title Nothing Playing")
-		print("There is currently no song playing.")
-		print("\n\n\n\n\n\n\n")
-		print("SpotiPy Current Song Info.")
-		print("Ver " + conf_vars['version_no'])
-		print("Waiting for music to play...")
+		dc = 1
 		while response.status_code == 204:
+			if dc == 4:
+				dc = 1
+			os.system("cls")
+			os.system("title Nothing Playing")
+			print("There is currently no song playing.")
+			print("\n\n\n\n\n\n")
+			print("SpotiPy Current Song Info.")
+			print("Ver " + conf_vars['version_no'])
+			print("Waiting for music to play" + "." * dc)
+			dc += 1
 			response = requests.get(
 			SPOTIFY_GET_CURRENT_TRACK_URL,
 			headers={
 				"Authorization": f"Bearer {access_token}"
 			})
-			time.sleep(int(conf_vars['sleeptime']))
+			time.sleep(1)
 		get_api_information(access_token)
 	global json_resp
 	json_resp = response.json()
