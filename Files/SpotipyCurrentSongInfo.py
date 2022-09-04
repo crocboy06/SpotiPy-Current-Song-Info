@@ -200,6 +200,8 @@ def main():
 		os.system("title Currently Playing Track")
 	elif "^" in current_api_info['artists']:
 		os.system("title Currently Playing Track")
+	elif "&" in current_api_info['artists']:
+		os.system("title Currently Playing Track")
 	else:
 		os.system("title " + '"' + str(current_api_info['track_name']) + '"' + " by " + str(current_api_info['artists']))
 	#Please.
