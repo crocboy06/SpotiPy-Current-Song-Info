@@ -93,7 +93,7 @@ def get_api_information(access_token):
 			os.system("cls")
 			os.system("title Nothing Playing")
 			print("There is currently no song playing.")
-			print("\n\n\n\n\n\n")
+			print("")
 			print("SpotiPy Current Song Info.")
 			print("Ver " + conf_vars['version_no'])
 			print("Waiting for music to play" + "." * dc)
@@ -108,6 +108,16 @@ def get_api_information(access_token):
 	global json_resp
 	json_resp = response.json()
 	errorfinder()
+	try:
+		track_id = json_resp['item']['id']
+	except:
+		time.sleep(int(conf_vars['sleeptime']))
+		os.system('cls')
+		print("Are you playing a podcast?")
+		print("We don't support podcasts yet.")
+		print("Please play a song and we'll get things rolling")
+		print("\n" + "Spotipy Current Song Info v" + conf_vars['version_no'])
+		get_api_information(access_token)
 	track_id = json_resp['item']['id']
 	track_name = json_resp['item']['name']
 	artists = [artist for artist in json_resp['item']['artists']]
@@ -170,7 +180,24 @@ def eastereggs():
 			os.system("title ALL I SEE IS BROKE AHH HATING AHH")
 		case "3REWLq2J5vzUs4OX0XzSih":
 			os.system("title ON THIS X STILL YEAH BOOT UP EVERY NIGHT")
+		case "38PAO1pvj6sAhVKb40dmw7":
+			os.system("title LEGALIZE NUCLEAR BOMBS")
 #I Growl By cherry<3 I Growl By cherry<3I Growl By cherry<3
+
+def mainSimple():
+	global current_api_info
+	current_api_info = get_api_information(ACCESS_TOKEN)
+	if current_api_info['explicit']:
+		os.system('title "' + current_api_info['track_name'] + '" [Explicit]')
+	else:
+		os.system('title "' + current_api_info['track_name'] + '"')
+	os.system("cls")
+	print("Artist(s): " + current_api_info['artists'])
+	print("Album: " + current_api_info['album'] + ' [' + current_api_info['albumtype'].capitalize() + ']')
+	if conf_vars['progresstype'] == "Remainder": print("Duration: " + current_api_info['duration'] + " / " + current_api_info['progress'])
+	if conf_vars['progresstype'] != "Remainder": print("Duration: " + current_api_info['progress'] + " / " + current_api_info['duration'])
+	time.sleep(int(conf_vars['sleeptime']))
+
 def main():
 	global current_api_info
 	global last_track_id
@@ -209,7 +236,7 @@ def main():
 	eastereggs()
 
 	os.system("cls")
-	print("                         ♪ Now Playing ♪                              ")
+	print("♪ Now Playing ♪".center(70))
 	
 	match current_api_info['devtype']:
 		case "Smartphone":
@@ -250,8 +277,6 @@ conf_vars = config_object["CONFVARS"]
 
 access_token = conf_vars['access_token']
 
-if conf_vars['tracklink'] == "False": os.system("mode con cols=70 lines=12")
-else: os.system("mode con cols=70 lines=13")
 cursor.hide()
 
 #is this needed? YES.
@@ -271,9 +296,15 @@ if conf_vars['logging'] == True:
 	songlog.write("SONG LOG FOR SESSION")
 	songlog.close()
 
-print("Startup Complete")
-print("Starting Program")
 
 if __name__ == '__main__': 
-	while True:
-		main()
+	match conf_vars['mode']:
+		case "simple":
+			os.system("mode con cols=70 lines=5")
+			while True:
+				mainSimple()
+		case "default":
+			if conf_vars['tracklink'] == "False": os.system("mode con cols=70 lines=12")
+			else: os.system("mode con cols=70 lines=13")
+			while True:
+				main()
