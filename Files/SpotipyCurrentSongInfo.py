@@ -107,17 +107,23 @@ def get_api_information(access_token):
 		get_api_information(access_token)
 	global json_resp
 	json_resp = response.json()
-	errorfinder()
-	try:
-		track_id = json_resp['item']['id']
-	except:
-		time.sleep(int(conf_vars['sleeptime']))
-		os.system('cls')
-		print("Are you playing a podcast?")
-		print("We don't support podcasts yet.")
-		print("Please play a song and we'll get things rolling")
-		print("\n" + "Spotipy Current Song Info v" + conf_vars['version_no'])
-		get_api_information(access_token)
+	match json_resp['currently_playing_type']:
+		case "ad":
+			time.sleep(int(conf_vars['sleeptime']))
+			os.system("cls")
+			os.system("title Advertisement")
+			print("Advertisement")
+			print("Upgrade to Spotify Premium to remove advertisements.")
+			print("SCSI will be back shortly.")
+			print("\nSpotiPy Current Song Info v" + conf_vars['version_no'])
+			get_api_information(access_token)
+		case "podcast":
+			time.sleep(int(conf_vars['sleeptime']))
+			os.system("cls")
+			os.system("title Podcast")
+			print("We do not support podcasts.")
+			print("Play a song, and we'll get things rolling")
+			get_api_information(access_token)
 	track_id = json_resp['item']['id']
 	track_name = json_resp['item']['name']
 	artists = [artist for artist in json_resp['item']['artists']]
@@ -182,7 +188,6 @@ def eastereggs():
 			os.system("title ON THIS X STILL YEAH BOOT UP EVERY NIGHT")
 		case "38PAO1pvj6sAhVKb40dmw7":
 			os.system("title LEGALIZE NUCLEAR BOMBS")
-#I Growl By cherry<3 I Growl By cherry<3I Growl By cherry<3
 
 def mainSimple():
 	global current_api_info
