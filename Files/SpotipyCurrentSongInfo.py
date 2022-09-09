@@ -209,7 +209,7 @@ def main():
 	current_api_info = get_api_information(ACCESS_TOKEN)
 	current_track_id = current_api_info['id']
 	if current_track_id != last_track_id:
-		if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " By " + current_api_info['artists'])
+		if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " by " + current_api_info['artists'])
 
 	if conf_vars['logging'] == True:
 		if current_track_id != last_track_id:
