@@ -107,7 +107,8 @@ def get_api_information(access_token):
 		get_api_information(access_token)
 	global json_resp
 	json_resp = response.json()
-	match json_resp['currently_playing_type']:
+	errorfinder()
+	match json_resp["currently_playing_type"]:
 		case "ad":
 			time.sleep(int(conf_vars['sleeptime']))
 			os.system("cls")
