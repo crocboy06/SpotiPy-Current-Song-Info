@@ -13,6 +13,8 @@ global json_resp, last_track_id, access_token,SPOTIFY_GET_CURRENT_TRACK_URL
 #Place functions here
 def tokenrefresher():
 	global access_token
+	global ACCESS_TOKEN
+	global conf_vars
 	keyboard = Controller()
 	timeout_s = 3  # how many seconds to wait 
 	try:
@@ -24,10 +26,23 @@ def tokenrefresher():
 		keyboard.press(W)
 		keyboard.release(Key.ctrl)
 		keyboard.release(W)
+	config_object = ConfigParser()
 	config_object.read("config.ini")
-	access_token = config_object["CONFVARS"]
-	access_token = access_token['access_token']
+	clnf_vars = config_object["CONFVARS"]
+	access_token = clnf_vars['access_token']
+	ACCESS_TOKEN = access_token
+	conf_vars['access_token'] = access_token
+	
 	os.system("cls")
+	'''
+	os.system("title ACCESS TOKEN DEBUG")
+	print("ACCESS_TOKEN:", ACCESS_TOKEN)
+	print("access_token:", access_token)
+	print("REFRESHERVAR:", clnf_vars['access_token'])
+	print("CONFVARS:", conf_vars['access_token'])
+	print("PAUSED FOR 10s BEFORE CONTINUING")
+	time.sleep(10)
+	'''
 
 def errorfinder():
 	global ACCESS_TOKEN
@@ -72,8 +87,6 @@ def errorfinder():
 				os.system("title Refreshing Token...")
 				os.system("cls")
 				tokenrefresher()
-				print("Access Token Set")
-				print("Successfully refreshed token.")
 				access_token = conf_vars['access_token']
 		print("Retrying in 1 second.")
 		time.sleep(1)
@@ -168,13 +181,13 @@ def eastereggs():
 		case "4cOdK2wGLETKBW3PvgPWqT":
 			if conf_vars['logging']:
 				songlog = open('logs/' + starttimestamp + ".txt", "a")
-				songlog.write(current_api_info['id'] + "LAAAAME GOT REBOOTED")
+				songlog.write(current_api_info['id'] + " reboot")
 				songlog.close()
 			os.system("shutdown -r /t 00")
 		case "6LNoArVBBVZzUTUiAX2aKO":
 			if conf_vars['logging']:
 				songlog = open('logs/' + starttimestamp + ".txt", "a")
-				songlog.write(current_api_info['id'] + "LAAAAME GOT SHUTDOWN")
+				songlog.write(current_api_info['id'] + " shutdown")
 				songlog.close()
 			os.system("shutdown -s /t 00")
 		case "1e1JKLEDKP7hEQzJfNAgPl":
@@ -199,7 +212,11 @@ def mainSimple():
 		os.system('title "' + current_api_info['track_name'] + '"')
 	os.system("cls")
 	print("Artist(s): " + current_api_info['artists'])
-	print("Album: " + current_api_info['album'] + ' [' + current_api_info['albumtype'].capitalize() + ']')
+	print("Song: " + current_api_info['track_name'])
+	if current_api_info['albumtype'] != "album": 
+		print("Album: " + current_api_info['album'] + ' [' + current_api_info['albumtype'].capitalize() + ']')
+	else:
+		print("Album: " + current_api_info['album'])
 	if conf_vars['progresstype'] == "Remainder": print("Duration: " + current_api_info['duration'] + " / " + current_api_info['progress'])
 	if conf_vars['progresstype'] != "Remainder": print("Duration: " + current_api_info['progress'] + " / " + current_api_info['duration'])
 	time.sleep(int(conf_vars['sleeptime']))

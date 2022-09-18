@@ -71,11 +71,6 @@ def currentlyPlaying():
     sp = spotipy.Spotify(auth=token_info['access_token'])
     return sp.current_playback()
 
-def quesecoloautacacaFART():
-    global token_info
-    sp_oauth = create_spotify_oauth()
-    token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-    save_token_to_spotipycurrentsonginfo()
 
 def get_token2():
     global token_info
@@ -84,7 +79,12 @@ def get_token2():
         raise "exception"
     sp_oauth = create_spotify_oauth()
     token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-    save_token_to_spotipycurrentsonginfo()
+    config_object = ConfigParser()
+    config_object.read("config.ini")
+    conf_vars = config_object["CONFVARS"]
+    conf_vars['access_token'] = token_info['access_token']
+    with open('config.ini', 'w') as conf:
+        config_object.write(conf)
     return token_info
 
 def get_token():
@@ -98,16 +98,13 @@ def get_token():
     if (is_expired):
         sp_oauth = create_spotify_oauth()
         token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-    save_token_to_spotipycurrentsonginfo()
-    return token_info
-
-def save_token_to_spotipycurrentsonginfo():
     config_object = ConfigParser()
     config_object.read("config.ini")
     conf_vars = config_object["CONFVARS"]
     conf_vars['access_token'] = token_info['access_token']
     with open('config.ini', 'w') as conf:
         config_object.write(conf)
+    return token_info
 
 def create_spotify_oauth():
     return SpotifyOAuth(
