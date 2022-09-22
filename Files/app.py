@@ -83,6 +83,7 @@ def get_token2():
     config_object.read("config.ini")
     conf_vars = config_object["CONFVARS"]
     conf_vars['access_token'] = token_info['access_token']
+    conf_vars['refresh_token'] = token_info['refresh_token']
     with open('config.ini', 'w') as conf:
         config_object.write(conf)
     return token_info

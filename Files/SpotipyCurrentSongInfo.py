@@ -18,8 +18,9 @@ def tokenrefresher():
 	keyboard = Controller()
 	timeout_s = 3  # how many seconds to wait 
 	try:
-		webbrowser.open_new('http://localhost:5000')
-		p = subprocess.run("flask run", timeout=timeout_s)
+		import trv2
+		trv2
+		#p = subprocess.run(sys.executable, 'trv2.py', timeout=timeout_s)
 	except subprocess.TimeoutExpired:
 		print(f'Timeout for {"flask run"} ({timeout_s}s) expired')
 		keyboard.press(Key.ctrl)
@@ -34,6 +35,8 @@ def tokenrefresher():
 	conf_vars['access_token'] = access_token
 	
 	os.system("cls")
+	print("Access Token refreshed successfully.")
+	print("Now, Back to the music.")
 	'''
 	os.system("title ACCESS TOKEN DEBUG")
 	print("ACCESS_TOKEN:", ACCESS_TOKEN)
@@ -198,8 +201,8 @@ def eastereggs():
 			os.system("title The Spongebob Squarepants Movie (2004)")
 		case "7rkYrxNHxXv2c7X9C5sQxZ":
 			os.system("title ALL I SEE IS BROKE AHH HATING AHH")
-		case "3REWLq2J5vzUs4OX0XzSih":
-			os.system("title ON THIS X STILL YEAH BOOT UP EVERY NIGHT")
+		case "0PgzDn3NE51xmwOoxZysbC":
+			os.system("title RUN UP ON ME IMMA DO YOU DIRTY")
 		case "38PAO1pvj6sAhVKb40dmw7":
 			os.system("title LEGALIZE NUCLEAR BOMBS")
 
@@ -287,7 +290,7 @@ def main():
 	print("Released: " + current_api_info['release_date'])
 	if conf_vars['tracklink'] == "True": print("Play it Here: " + current_api_info['link'])
 	print("TrackID: " + current_track_id) 
-	print("Last Song Change: " + str(datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime("%m-%d-%Y, %H:%M:%S")))
+	print("Last Song Change: " + str(datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime("%m-%d-%Y @ %H:%M:%S")))
 	
 	
 	#do not touch this please
