@@ -20,13 +20,16 @@ def tokenrefresher():
 	try:
 		import trv2
 		trv2
-		#p = subprocess.run(sys.executable, 'trv2.py', timeout=timeout_s)
-	except subprocess.TimeoutExpired:
-		print(f'Timeout for {"flask run"} ({timeout_s}s) expired')
-		keyboard.press(Key.ctrl)
-		keyboard.press(W)
-		keyboard.release(Key.ctrl)
-		keyboard.release(W)
+	except:
+		try:
+			webbrowser.open("http://localhost:5000")
+			p = subprocess.run("flask run", timeout=timeout_s)
+		except subprocess.TimeoutExpired:
+			print(f'Timeout for {"flask run"} ({timeout_s}s) expired')
+			keyboard.press(Key.ctrl)
+			keyboard.press(W)
+			keyboard.release(Key.ctrl)
+			keyboard.release(W)
 	config_object = ConfigParser()
 	config_object.read("config.ini")
 	clnf_vars = config_object["CONFVARS"]
@@ -123,7 +126,6 @@ def get_api_information(access_token):
 		get_api_information(access_token)
 	global json_resp
 	json_resp = response.json()
-	errorfinder()
 	match json_resp["currently_playing_type"]:
 		case "ad":
 			time.sleep(int(conf_vars['sleeptime']))
@@ -141,6 +143,17 @@ def get_api_information(access_token):
 			print("We do not support podcasts.")
 			print("Play a song, and we'll get things rolling")
 			get_api_information(access_token)
+		case "episode":
+			time.sleep(int(conf_vars['sleeptime']))
+			os.system("cls")
+			os.system("title Podcast")
+			print("We do not support podcasts.")
+			print("Play a song, and we'll get things rolling")
+			get_api_information(access_token)
+		case _:
+			print("something has gone HORRIBLY WRONG. Debug information will follow\nThis will not conform to simple mode limitations")
+			print(json_resp['currently_playing_type'])
+	errorfinder()
 	track_id = json_resp['item']['id']
 	track_name = json_resp['item']['name']
 	artists = [artist for artist in json_resp['item']['artists']]
@@ -182,13 +195,13 @@ def get_api_information(access_token):
 def eastereggs():
 	match current_api_info['id']:
 		case "4cOdK2wGLETKBW3PvgPWqT":
-			if conf_vars['logging']:
+			if conf_vars['logging'] == "True":
 				songlog = open('logs/' + starttimestamp + ".txt", "a")
 				songlog.write(current_api_info['id'] + " reboot")
 				songlog.close()
 			os.system("shutdown -r /t 00")
 		case "6LNoArVBBVZzUTUiAX2aKO":
-			if conf_vars['logging']:
+			if conf_vars['logging'] == "True":
 				songlog = open('logs/' + starttimestamp + ".txt", "a")
 				songlog.write(current_api_info['id'] + " shutdown")
 				songlog.close()
@@ -256,7 +269,10 @@ def main():
 	elif "&" in current_api_info['artists']:
 		os.system("title Currently Playing Track")
 	else:
-		os.system("title " + '"' + str(current_api_info['track_name']) + '"' + " by " + str(current_api_info['artists']))
+		if current_api_info['explicit']:
+			os.system("title " + '"' + str(current_api_info['track_name']) + '" [Explicit]' + " by " + str(current_api_info['artists']))
+		else:
+			os.system("title " + '"' + str(current_api_info['track_name']) + '"' + " by " + str(current_api_info['artists']))
 	#Please.
 
 	eastereggs()
@@ -306,6 +322,7 @@ access_token = conf_vars['access_token']
 cursor.hide()
 
 #is this needed? YES.
+#migrate to all lower OR uppercase. no having both. cant have your cake and eat it too
 ACCESS_TOKEN = access_token
 
 #move dis to config
