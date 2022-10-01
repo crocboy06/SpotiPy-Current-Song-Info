@@ -1,4 +1,4 @@
-#credit to bingbong for that 204 error help
+ #credit to bingbong for that 204 error help
 #stealing my code is really lame, so don't do that (lmao just do it anyway this is garbage probably)(its getting better tho)
 from distutils.command.config import config
 from re import A
@@ -126,6 +126,7 @@ def get_api_information(access_token):
 		get_api_information(access_token)
 	global json_resp
 	json_resp = response.json()
+	errorfinder()
 	match json_resp["currently_playing_type"]:
 		case "ad":
 			time.sleep(int(conf_vars['sleeptime']))
@@ -150,10 +151,6 @@ def get_api_information(access_token):
 			print("We do not support podcasts.")
 			print("Play a song, and we'll get things rolling")
 			get_api_information(access_token)
-		case _:
-			print("something has gone HORRIBLY WRONG. Debug information will follow\nThis will not conform to simple mode limitations")
-			print(json_resp['currently_playing_type'])
-	errorfinder()
 	track_id = json_resp['item']['id']
 	track_name = json_resp['item']['name']
 	artists = [artist for artist in json_resp['item']['artists']]
@@ -245,7 +242,7 @@ def main():
 	if current_track_id != last_track_id:
 		if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " by " + current_api_info['artists'])
 
-	if conf_vars['logging'] == True:
+	if conf_vars['logging'] == "True":
 		if current_track_id != last_track_id:
 			songlog = open("logs/" + starttimestamp + ".txt", "a")
 			songlog.write("\n")
@@ -331,12 +328,11 @@ SPOTIFY_GET_CURRENT_TRACK_URL = 'https://api.spotify.com/v1/me/player'
 #test neccessity of this
 last_track_id = None
 
-if conf_vars['logging'] == True:
+if conf_vars['logging'] == "True":
 	print("Logging Enabled")
 	starttimestamp = str(datetime.fromtimestamp(datetime.now().timestamp()).strftime("%m-%d-%Y, %H-%M-%S"))
-	time.sleep(20)
 	songlog = open("logs/" + starttimestamp + ".txt", "w+")
-	songlog.write("SONG LOG FOR SESSION")
+	songlog.write("SONG LOG FOR SESSION @ " + starttimestamp)
 	songlog.close()
 
 
