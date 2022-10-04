@@ -13,7 +13,7 @@ global json_resp, last_track_id, access_token,SPOTIFY_GET_CURRENT_TRACK_URL
 #Place functions here
 def tokenrefresher():
 	global access_token
-	global ACCESS_TOKEN
+	global access_token
 	global conf_vars
 	keyboard = Controller()
 	timeout_s = 3  # how many seconds to wait 
@@ -32,17 +32,15 @@ def tokenrefresher():
 			keyboard.release(W)
 	config_object = ConfigParser()
 	config_object.read("config.ini")
-	clnf_vars = config_object["CONFVARS"]
-	access_token = clnf_vars['access_token']
-	ACCESS_TOKEN = access_token
-	conf_vars['access_token'] = access_token
+	conf_vars = config_object["CONFVARS"]
+	access_token = conf_vars['access_token']
 	
 	os.system("cls")
 	print("Access Token refreshed successfully.")
 	print("Now, Back to the music.")
 	'''
 	os.system("title ACCESS TOKEN DEBUG")
-	print("ACCESS_TOKEN:", ACCESS_TOKEN)
+	print("access_token:", access_token)
 	print("access_token:", access_token)
 	print("REFRESHERVAR:", clnf_vars['access_token'])
 	print("CONFVARS:", conf_vars['access_token'])
@@ -51,8 +49,7 @@ def tokenrefresher():
 	'''
 
 def errorfinder():
-	global ACCESS_TOKEN
-	access_token = ACCESS_TOKEN
+	global access_token
 	try:
 		#This was implemented to prevent "NoneType is not subscriptable" TypeError.
 		#This error was found to occur when the program calls to the API to try and get current song information while the user is inbetween songs.
@@ -68,7 +65,7 @@ def errorfinder():
 				if conf_vars['extended_debug_info']: print("Most common cause is that the user is inbetween songs.")
 				time.sleep(5)
 				#Once the error has been handled, and the user knows, refresh the current song and get a new JSON response to clear the error
-			get_api_information(ACCESS_TOKEN)
+			get_api_information(access_token)
 	except:
 		#If the error is something else, like an API Rate limit, it will follow through this, and give some error specific information for common problems.
 		#If the JSON response has an error, let's tell the user, and handle it.
@@ -96,7 +93,7 @@ def errorfinder():
 				access_token = conf_vars['access_token']
 		print("Retrying in 1 second.")
 		time.sleep(1)
-		get_api_information(ACCESS_TOKEN)
+		get_api_information(access_token)
 
 def get_api_information(access_token):
 	response = requests.get(
@@ -111,7 +108,7 @@ def get_api_information(access_token):
 				dc = 1
 			os.system("cls")
 			os.system("title Nothing Playing")
-			print("There is currently no song playing.")
+			print("There is currently no music playing.")
 			print("")
 			print("SpotiPy Current Song Info.")
 			print("Ver " + conf_vars['version_no'])
@@ -151,6 +148,7 @@ def get_api_information(access_token):
 			print("We do not support podcasts.")
 			print("Play a song, and we'll get things rolling")
 			get_api_information(access_token)
+	
 	track_id = json_resp['item']['id']
 	track_name = json_resp['item']['name']
 	artists = [artist for artist in json_resp['item']['artists']]
@@ -218,7 +216,7 @@ def eastereggs():
 
 def mainSimple():
 	global current_api_info
-	current_api_info = get_api_information(ACCESS_TOKEN)
+	current_api_info = get_api_information(access_token)
 	if current_api_info['explicit']:
 		os.system('title "' + current_api_info['track_name'] + '" [Explicit]')
 	else:
@@ -237,7 +235,7 @@ def mainSimple():
 def main():
 	global current_api_info
 	global last_track_id
-	current_api_info = get_api_information(ACCESS_TOKEN)
+	current_api_info = get_api_information(access_token)
 	current_track_id = current_api_info['id']
 	if current_track_id != last_track_id:
 		if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " by " + current_api_info['artists'])
@@ -318,9 +316,7 @@ access_token = conf_vars['access_token']
 
 cursor.hide()
 
-#is this needed? YES.
-#migrate to all lower OR uppercase. no having both. cant have your cake and eat it too
-ACCESS_TOKEN = access_token
+#migrated all ACCESS_TOKEN to lowercase
 
 #move dis to config
 SPOTIFY_GET_CURRENT_TRACK_URL = 'https://api.spotify.com/v1/me/player'
