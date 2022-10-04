@@ -338,7 +338,13 @@ if __name__ == '__main__':
 			os.system("mode con cols=70 lines=5")
 			while True:
 				mainSimple()
+
 		case "default":
+			if conf_vars['tracklink'] == "False": os.system("mode con cols=70 lines=12")
+			else: os.system("mode con cols=70 lines=13")
+			while True:
+				main()
+		case _:
 			if conf_vars['tracklink'] == "False": os.system("mode con cols=70 lines=12")
 			else: os.system("mode con cols=70 lines=13")
 			while True:
