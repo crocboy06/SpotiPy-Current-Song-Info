@@ -10,6 +10,23 @@ from configparser import ConfigParser
 from tkinter import W
 global conf_vars
 global json_resp, last_track_id, access_token,SPOTIFY_GET_CURRENT_TRACK_URL
+#place BADASS OOP stuff here
+class songlogger():
+	global starttimestamp
+	def __init__(self, name, artist, id):
+		self.name = name
+		self.artist = artist
+		self.id = id
+	def saveInfo(self):
+		print("To Be Saved:")
+		songlog = open('logs/' + starttimestamp + ".txt", "a")
+		songlog.write("\n-----------------------------------\n")
+		songlog.write("Track: " + self.name +'\n')
+		songlog.write("Artist: " + self.artist +'\n')
+		songlog.write("id: " + self.id +'\n')
+		songlog.write("-----------------------------------\n")
+		songlog.close()
+
 #Place functions here
 def tokenrefresher():
 	global access_token
@@ -191,14 +208,15 @@ def eastereggs():
 	match current_api_info['id']:
 		case "4cOdK2wGLETKBW3PvgPWqT":
 			if conf_vars['logging'] == "True":
-				songlog = open('logs/' + starttimestamp + ".txt", "a")
-				songlog.write(current_api_info['id'] + " reboot")
-				songlog.close()
-			os.system("shutdown -r /t 00")
+				saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
+				saveinfo.saveInfo()
+			import pcaltf4
+			pcaltf4
 		case "6LNoArVBBVZzUTUiAX2aKO":
 			if conf_vars['logging'] == "True":
 				songlog = open('logs/' + starttimestamp + ".txt", "a")
-				songlog.write(current_api_info['id'] + " shutdown")
+				saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
+				saveinfo.saveInfo()
 				songlog.close()
 			os.system("shutdown -s /t 00")
 		case "1e1JKLEDKP7hEQzJfNAgPl":
@@ -242,10 +260,8 @@ def main():
 
 	if conf_vars['logging'] == "True":
 		if current_track_id != last_track_id:
-			songlog = open("logs/" + starttimestamp + ".txt", "a")
-			songlog.write("\n")
-			songlog.write(current_api_info['id'])
-			songlog.close()
+			saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
+			saveinfo.saveInfo()
 	last_track_id = current_track_id
 	
 	#Please, someone make this a switch statement.
