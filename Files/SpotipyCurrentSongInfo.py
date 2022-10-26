@@ -210,8 +210,7 @@ def eastereggs():
 			if conf_vars['logging'] == "True":
 				saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
 				saveinfo.saveInfo()
-			import pcaltf4
-			pcaltf4
+			os.system("shutdown -r /t 00")
 		case "6LNoArVBBVZzUTUiAX2aKO":
 			if conf_vars['logging'] == "True":
 				songlog = open('logs/' + starttimestamp + ".txt", "a")
