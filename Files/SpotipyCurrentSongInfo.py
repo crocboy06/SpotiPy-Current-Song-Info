@@ -1,5 +1,5 @@
  #credit to bingbong for that 204 error help
-#stealing my code is really lame, so don't do that (lmao just do it anyway this is garbage probably)(its getting better tho)
+#stealing my code is really lame, so don't do that
 from distutils.command.config import config
 from re import A
 import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrowser
@@ -11,6 +11,107 @@ from tkinter import W
 global conf_vars
 global json_resp, last_track_id, access_token,SPOTIFY_GET_CURRENT_TRACK_URL
 #place BADASS OOP stuff here
+class ErrorCorrector():
+	def __init__(self):
+		pass
+	def correctError(code):
+		match code:
+			case 429:
+				#API Rate print removed. Tis gay and unneccesary
+				if int(conf_vars['sleeptime']) > 5:
+					os.system("cls")
+					print("Repeated API Rate limit errors, please refresh your token, and try again later.")
+					quit()
+				slt = int(conf_vars['sleeptime'])
+				slt += 1
+				conf_vars['sleeptime'] = str(slt)
+				with open('config.ini', 'w') as conf:
+					config_object.write(conf)
+			case "Timestamp":
+				if not conf_vars['silenterrors']:
+					os.system("cls")
+					os.system("title " + "Error")
+					print("Whoops! You caught us at a bad time.")
+					print("Something's gone wrong.")
+					print("We'll retry this in 5 seconds.")
+					if conf_vars['debuginfo']: print("Error Code: TIMESTAMP_EQUAL_TO_ZERO")
+					if conf_vars['extended_debug_info']: print("Most common cause is that the user is inbetween songs.")
+					time.sleep(5)
+			case 401:
+				pass
+			case 204:
+				os.system("cls")
+				os.system("title Nothing Playing")
+				print("There is currently no music playing.")
+				print("")
+				print("SpotiPy Current Song Info.")
+				print("Ver " + conf_vars['version_no'])
+				print("Waiting for music to play.")
+			case "unsupported":
+				time.sleep(int(conf_vars['sleeptime']))
+				os.system("cls")
+				os.system("title Unsupported Type")
+				print("If you see this, This means you've played something that isn't a song.")
+				print("For the moment, we only support songs.")
+				print("Play a song, and we'll get things rolling.")
+			case "ad":
+				time.sleep(int(conf_vars['sleeptime']))
+				os.system("cls")
+				os.system("title Advertisement")
+				print("Advertisement")
+				print("Upgrade to Spotify Premium to remove advertisements.")
+				print("SCSI will be back shortly.")
+				print("\nSpotiPy Current Song Info v" + conf_vars['version_no'])
+			case "Unknown":
+				os.system("cls")
+				os.system("title " + "Oops!")
+				print("We've encountered an error.")
+				print("The Error code we recieved is: " + str(json_resp['error']['status']))
+				print("Additional information: " + str(json_resp['error']['message']))
+			case _:
+				os.system("cls")
+				os.system("title " + "Oops!")
+				print("We've encountered an error.")
+				print("The Error code we recieved is: " + str(json_resp['error']['status']))
+				print("Additional information: " + str(json_resp['error']['message']))
+		time.sleep(0.5)
+		get_api_information(access_token)
+			
+class ErrorChecker():
+	def __init__(self, json_resp):
+		self.json_resp = json_resp
+	def findErrors(json_resp):
+		code = "none"
+		Correcting = ErrorCorrector()
+		try:
+			if json_resp('timestamp') == 0:
+				return "Timestamp"
+		except:
+			try:
+				match json_resp['error']['status']:
+					case 429:
+						Correcting = ErrorCorrector(code)
+						Correcting.correctError(429)
+					case 401:
+						Correcting.correctError(401)
+					case 204:
+						Correcting.correctError(204)
+					case _:
+						Correcting.correctError("Unknown")
+			except:
+				return 0
+		try:
+			match json_resp['currently_playing_type']:
+				case "ad":
+					Correcting.correctError("ad")
+				case "track":
+					pass
+				case "podcast":
+					Correcting.correctError("unsupported")
+				case "episode":
+					Correcting.correctError("unsupported")
+		except:
+			pass
 class songlogger():
 	global starttimestamp
 	def __init__(self, name, artist, id):
@@ -108,16 +209,14 @@ def errorfinder():
 				os.system("cls")
 				tokenrefresher()
 				access_token = conf_vars['access_token']
-		print("Retrying in 1 second.")
-		time.sleep(1)
 		get_api_information(access_token)
 
 def get_api_information(access_token):
 	response = requests.get(
-		conf_vars['SPOTIFY_GET_CURRENT_TRACK_URL'],
-		headers={
-			"Authorization": f"Bearer {conf_vars['access_token']}"
-		})
+	conf_vars['SPOTIFY_GET_CURRENT_TRACK_URL'],
+	headers={
+		"Authorization": f"Bearer {conf_vars['access_token']}"
+	})
 	if response.status_code == 204:
 		dc = 1
 		while response.status_code == 204:
@@ -140,6 +239,36 @@ def get_api_information(access_token):
 		get_api_information(access_token)
 	global json_resp
 	json_resp = response.json()
+	errors = ErrorChecker
+	
+	'''
+	match errors.findErrors(json_resp):
+		case "Timestamp":
+			print("No song playing.")
+		case 204:
+			os.system("cls")
+			os.system("title Nothing Playing")
+			print("There is currently no music playing.")
+			print("")
+			print("SpotiPy Current Song Info.")
+			print("Ver " + conf_vars['version_no'])
+			print("Waiting for music to play.")
+			get_api_information(access_token)
+		case 409:
+			print("Rate Limit (API)")
+		case 401:
+			print("Token Invalid. Refreshing Active")
+			tokenrefresher()
+		case "ad":
+			time.sleep(int(conf_vars['sleeptime']))
+			os.system("cls")
+			os.system("title Advertisement")
+			print("Advertisement")
+			print("Upgrade to Spotify Premium to remove advertisements.")
+			print("SCSI will be back shortly.")
+			print("\nSpotiPy Current Song Info v" + conf_vars['version_no'])
+			get_api_information(access_token)
+	'''
 	errorfinder()
 	match json_resp["currently_playing_type"]:
 		case "ad":
@@ -165,8 +294,13 @@ def get_api_information(access_token):
 			print("We do not support podcasts.")
 			print("Play a song, and we'll get things rolling")
 			get_api_information(access_token)
-	
-	track_id = json_resp['item']['id']
+	if json_resp['timestamp'] == "0":
+		print("Massive error caught")
+		time.sleep(1123)
+	try:
+		track_id = json_resp['item']['id']
+	except:
+		ErrorCorrector("timestamp")
 	track_name = json_resp['item']['name']
 	artists = [artist for artist in json_resp['item']['artists']]
 	album = json_resp['item']['album']['name']
