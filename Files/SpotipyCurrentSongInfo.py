@@ -1,4 +1,4 @@
- #credit to bingbong for that 204 error help
+#credit to bingbong for that 204 error help
 #stealing my code is really lame, so don't do that
 from distutils.command.config import config
 from re import A
@@ -9,7 +9,8 @@ from datetime import datetime
 from configparser import ConfigParser
 from tkinter import W
 global conf_vars
-global json_resp, last_track_id, access_token,SPOTIFY_GET_CURRENT_TRACK_URL
+global json_resp, last_track_id, access_token,SPOTIFY_GET_CURRENT_TRACK_URL, title
+global char
 #place BADASS OOP stuff here
 class ErrorCorrector():
 	def __init__(self):
@@ -127,6 +128,27 @@ class songlogger():
 		songlog.write("id: " + self.id +'\n')
 		songlog.write("-----------------------------------\n")
 		songlog.close()
+#vars
+title = ""
+char = "Illegal Value |()^&<>"
+#dictionaries
+forbidden_dict = {
+	"(": 'title.replace("(","[OpPr]")',
+	")": 'title.replace(")","[ClPr]")',
+	"<": 'title.replace("<","[LsThn]")',
+	">": 'title.replace(">","[GrThn]")',
+	"^": 'title.replace("^","Pwr")',
+	"|": 'title.replace("|","[VBar]")',
+	"&": 'title.replace("&","and")',
+}
+easter_dict = {
+	"1e1JKLEDKP7hEQzJfNAgPl": 'os.system("title IN NEW YORK I MILLY ROCK")',
+	"7x8O57b6oXzmbwANbSy2wq": 'os.system("title Real Rx")',
+	"6M14BiCN00nOsba4JaYsHW": 'os.system("title The Spongebob Squarepants Movie (2004)")',
+	"38PAO1pvj6sAhVKb40dmw7": 'os.system("title LEGALIZE NUCLEAR BOMBS")',
+	"2RJAKIw6nIkgZVsAIKhmqz": 'os.system("title im trapped in my head")',
+	"5TRPicyLGbAF2LGBFbHGvO": 'os.system("title HE MADE GRADUATION!!!!")',
+}
 
 #Place functions here
 def tokenrefresher():
@@ -339,31 +361,22 @@ def get_api_information(access_token):
 	return current_api_info
 
 def eastereggs():
-	match current_api_info['id']:
-		case "4cOdK2wGLETKBW3PvgPWqT":
-			if conf_vars['logging'] == "True":
-				saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
-				saveinfo.saveInfo()
-			os.system("shutdown -r /t 00")
-		case "6LNoArVBBVZzUTUiAX2aKO":
-			if conf_vars['logging'] == "True":
-				songlog = open('logs/' + starttimestamp + ".txt", "a")
-				saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
-				saveinfo.saveInfo()
-				songlog.close()
-			os.system("shutdown -s /t 00")
-		case "1e1JKLEDKP7hEQzJfNAgPl":
-			os.system("title IN NEW YORK I MILLY ROCK")
-		case "7K1HH9OC6nZlJqrGnr8r1g":
-			os.system("title Real Rx")
-		case "6M14BiCN00nOsba4JaYsHW":
-			os.system("title The Spongebob Squarepants Movie (2004)")
-		case "7rkYrxNHxXv2c7X9C5sQxZ":
-			os.system("title ALL I SEE IS BROKE AHH HATING AHH")
-		case "0PgzDn3NE51xmwOoxZysbC":
-			os.system("title RUN UP ON ME IMMA DO YOU DIRTY")
-		case "38PAO1pvj6sAhVKb40dmw7":
-			os.system("title LEGALIZE NUCLEAR BOMBS")
+	if current_api_info['id'] in easter_dict:
+		exec(easter_dict.get(current_api_info['id']))
+	else:
+		match current_api_info['id']:
+			case "4cOdK2wGLETKBW3PvgPWqT":
+				if conf_vars['logging'] == "True":
+					saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
+					saveinfo.saveInfo()
+				os.system("shutdown -r /t 00")
+			case "6LNoArVBBVZzUTUiAX2aKO":
+				if conf_vars['logging'] == "True":
+					songlog = open('logs/' + starttimestamp + ".txt", "a")
+					saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
+					saveinfo.saveInfo()
+					songlog.close()
+				os.system("shutdown -s /t 00")
 
 def mainSimple():
 	global current_api_info
@@ -384,77 +397,107 @@ def mainSimple():
 	time.sleep(int(conf_vars['sleeptime']))
 
 def main():
-	global current_api_info
-	global last_track_id
-	current_api_info = get_api_information(access_token)
-	current_track_id = current_api_info['id']
-	if current_track_id != last_track_id:
-		if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " by " + current_api_info['artists'])
-
-	if conf_vars['logging'] == "True":
+	try:
+		global current_api_info
+		global last_track_id
+		current_api_info = get_api_information(access_token)
+		current_track_id = current_api_info['id']
 		if current_track_id != last_track_id:
-			saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
-			saveinfo.saveInfo()
-	last_track_id = current_track_id
-	
-	#Please, someone make this a switch statement.
-	if "(" in current_api_info['artists']:
-		os.system("title Currently Playing Track")
-	elif ")" in current_api_info['artists']:
-		os.system("title Currently Playing Track")
-	elif "<" in current_api_info['artists']:
-		os.system("title Currently Playing Track")
-	elif ">" in current_api_info['artists']:
-		os.system("title Currently Playing Track")
-	elif "|" in current_api_info['artists']:
-		os.system("title Currently Playing Track")
-	elif "^" in current_api_info['artists']:
-		os.system("title Currently Playing Track")
-	elif "&" in current_api_info['artists']:
-		os.system("title Currently Playing Track")
-	else:
+			if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " by " + current_api_info['artists'] + " | " +current_api_info['album'])
+
+		if conf_vars['logging'] == "True":
+			if current_track_id != last_track_id:
+				saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
+				saveinfo.saveInfo()
+		last_track_id = current_track_id
+		title = " by " + str(current_api_info['artists'])
+		for char in forbidden_dict:
+			if char in title:
+				title = eval(forbidden_dict.get(char))
+				break
 		if current_api_info['explicit']:
-			os.system("title " + '"' + str(current_api_info['track_name']) + '" [Explicit]' + " by " + str(current_api_info['artists']))
+			title = '"' + str(current_api_info['track_name']) + '" [Explicit]' + title
 		else:
-			os.system("title " + '"' + str(current_api_info['track_name']) + '"' + " by " + str(current_api_info['artists']))
-	#Please.
+			title = '"' + str(current_api_info['track_name']) + '"' + title
+		os.system("title " + title)
+		#check ONLY artist, not else
+		'''
+		#Please, someone make this a switch statement.
+		if "(" in current_api_info['artists']:
+			os.system("title Currently Playing Track")
+		elif ")" in current_api_info['artists']:
+			os.system("title Currently Playing Track")
+		elif "<" in current_api_info['artists']:
+			os.system("title Currently Playing Track")
+		elif ">" in current_api_info['artists']:
+			os.system("title Currently Playing Track")
+		elif "|" in current_api_info['artists']:
+			os.system("title Currently Playing Track")
+		elif "^" in current_api_info['artists']:
+			os.system("title Currently Playing Track")
+		elif "&" in current_api_info['artists']:
+			os.system("title Currently Playing Track")
+		else:
+			if current_api_info['explicit']:
+				os.system("title " + '"' + str(current_api_info['track_name']) + '" [Explicit]' + " by " + str(current_api_info['artists']))
+			else:
+				os.system("title " + '"' + str(current_api_info['track_name']) + '"' + " by " + str(current_api_info['artists']))
+		#Please.
+		'''
+		eastereggs()
 
-	eastereggs()
+		os.system("cls")
+		print("♪ Now Playing ♪".center(70))
+		
+		match current_api_info['devtype']:
+			case "Smartphone":
+				print("Pb Device: " + current_api_info['devicename'] + " (Smartphone) | " + str(current_api_info['volume']) + "% Volume")
+			case "Computer":
+				print("Pb Device: " + current_api_info['devicename'] + " (Computer) | " + str(current_api_info['volume']) + "% Volume")
+			case "Tablet":
+				print("Pb Device: " + current_api_info['devicename'] + " (Tablet) | " + str(current_api_info['volume']) + "% Volume")
 
-	os.system("cls")
-	print("♪ Now Playing ♪".center(70))
-	
-	match current_api_info['devtype']:
-		case "Smartphone":
-			print("Pb Device: " + current_api_info['devicename'] + " (Smartphone) @ " + str(current_api_info['volume']) + "% Volume")
-		case "Computer":
-			print("Pb Device: " + current_api_info['devicename'] + " (Computer) @ " + str(current_api_info['volume']) + "% Volume")
-		case "Tablet":
-			print("Pb Device: " + current_api_info['devicename'] + " (Tablet) @ " + str(current_api_info['volume']) + "% Volume")
+		if current_api_info['playing']: print("Pb Status: Playing")
+		if not current_api_info['playing']: print("Pb Status: Paused")
+		
+		print("Artist(s): " + current_api_info['artists'])
+		print("Song: " + current_api_info['track_name'])
 
-	if current_api_info['playing']: print("Pb Status: Playing")
-	if not current_api_info['playing']: print("Pb Status: Paused")
+		if current_api_info['albumtype'] == "album": print("Album: " + current_api_info['album'])
+		if current_api_info['albumtype'] != "album": print("Album: " + current_api_info['album'] + " [" + current_api_info['albumtype'].capitalize() + "]")
+		
+		if conf_vars['progresstype'] == "Remainder": print("Duration: " + current_api_info['duration'] + " / " + current_api_info['progress'])
+		if conf_vars['progresstype'] != "Remainder": print("Duration: " + current_api_info['progress'] + " / " + current_api_info['duration'])
 	
-	print("Artist(s): " + current_api_info['artists'])
-	print("Song: " + current_api_info['track_name'])
+		if current_api_info['explicit']: print("Explicit: Yes")
+		if not current_api_info['explicit']: print("Explicit: No")
+		
+		print("Released: " + current_api_info['release_date'])
+		if conf_vars['tracklink'] == "True": print("Play it Here: " + current_api_info['link'])
+		print("TrackID: " + current_track_id) 
+		print("Last Song Change: " + str(datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime("%m-%d-%Y @ %H:%M:%S")))
+		
+		
+		#do not touch this please
+		time.sleep(int(conf_vars['sleeptime']))
+	except KeyboardInterrupt:
+		try:
+			os.system('cls')
+			os.system("title Program Stopped.")
+			print("CTRL + C Pressed, Program Paused.")
+			print("Last Song: " + current_api_info['track_name'] + " by " + current_api_info['artists'] + " | " +current_api_info['album'])
+			print("Press CTRL + C to resume function")
+			time.sleep(20000000)
+		except KeyboardInterrupt:
+			try:
+				os.system('cls')
+				os.system("title Resuming...")
+				print("Resuming program in 5 seconds.")
+				time.sleep(5)
+			except KeyboardInterrupt:
+				print("STOP PRESSING THE DAMN STOP COMMAND!")
+				os.system("shutdown -r /t 00")
 
-	if current_api_info['albumtype'] == "album": print("Album: " + current_api_info['album'])
-	if current_api_info['albumtype'] != "album": print("Album: " + current_api_info['album'] + " [" + current_api_info['albumtype'].capitalize() + "]")
-	
-	if conf_vars['progresstype'] == "Remainder": print("Duration: " + current_api_info['duration'] + " / " + current_api_info['progress'])
-	if conf_vars['progresstype'] != "Remainder": print("Duration: " + current_api_info['progress'] + " / " + current_api_info['duration'])
- 
-	if current_api_info['explicit']: print("Explicit: Yes")
-	if not current_api_info['explicit']: print("Explicit: No")
-	
-	print("Released: " + current_api_info['release_date'])
-	if conf_vars['tracklink'] == "True": print("Play it Here: " + current_api_info['link'])
-	print("TrackID: " + current_track_id) 
-	print("Last Song Change: " + str(datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime("%m-%d-%Y @ %H:%M:%S")))
-	
-	
-	#do not touch this please
-	time.sleep(int(conf_vars['sleeptime']))
 
 
 config_object = ConfigParser()
@@ -470,14 +513,14 @@ cursor.hide()
 #move dis to config
 SPOTIFY_GET_CURRENT_TRACK_URL = 'https://api.spotify.com/v1/me/player'
 
-#test neccessity of this
+#it is needed
 last_track_id = None
 
 if conf_vars['logging'] == "True":
 	print("Logging Enabled")
 	starttimestamp = str(datetime.fromtimestamp(datetime.now().timestamp()).strftime("%m-%d-%Y, %H-%M-%S"))
 	songlog = open("logs/" + starttimestamp + ".txt", "w+")
-	songlog.write("SONG LOG FOR SESSION @ " + starttimestamp)
+	songlog.write("SONG LOG FOR SESSION | " + starttimestamp)
 	songlog.close()
 
 
