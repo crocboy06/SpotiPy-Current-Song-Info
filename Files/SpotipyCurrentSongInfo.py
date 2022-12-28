@@ -234,30 +234,49 @@ def errorfinder():
 		get_api_information(access_token)
 
 def get_api_information(access_token):
-	response = requests.get(
-	conf_vars['SPOTIFY_GET_CURRENT_TRACK_URL'],
-	headers={
-		"Authorization": f"Bearer {conf_vars['access_token']}"
-	})
+	try:
+		response = requests.get(
+		conf_vars['SPOTIFY_GET_CURRENT_TRACK_URL'],
+		headers={
+			"Authorization": f"Bearer {conf_vars['access_token']}"},
+		timeout=10)
+	except requests.ReadTimeout:
+		os.system('cls')
+		if conf_vars['silenterrors'].lower() == "false":
+			os.system('cls')
+			os.system("title TIMEOUT")
+			print("Spotify's API failed to reply within 10 seconds.")
+			print("Retrying in 5 seconds.")
+		time.sleep(5)
+		get_api_information(access_token)
+	except:
+		if conf_vars['silenterrors'].lower() == "false":
+			os.system('cls')
+			os.system("title Connection Error")
+			print("A connection-related request error has occured.")
+			print("Retrying in 5 seconds.")
+			print("Tip: Make sure your Wi-Fi/Ethernet is connected, with internet access.")
+		time.sleep(5)
+		get_api_information(access_token)
 	if response.status_code == 204:
 		dc = 1
-		while response.status_code == 204:
-			if dc == 4:
-				dc = 1
-			os.system("cls")
-			os.system("title Nothing Playing")
-			print("There is currently no music playing.")
-			print("")
-			print("SpotiPy Current Song Info.")
-			print("Ver " + conf_vars['version_no'])
-			print("Waiting for music to play" + "." * dc)
-			dc += 1
-			response = requests.get(
-			SPOTIFY_GET_CURRENT_TRACK_URL,
-			headers={
-				"Authorization": f"Bearer {access_token}"
-			})
-			time.sleep(1)
+	while response.status_code == 204:
+		if dc == 4:
+			dc = 1
+		os.system("cls")
+		os.system("title Nothing Playing")
+		print("There is currently no music playing.")
+		print("")
+		print("SpotiPy Current Song Info.")
+		print("Ver " + conf_vars['version_no'])
+		print("Waiting for music to play" + "." * dc)
+		dc += 1
+		response = requests.get(
+		SPOTIFY_GET_CURRENT_TRACK_URL,
+		headers={
+			"Authorization": f"Bearer {access_token}"
+		})
+		time.sleep(1)
 		get_api_information(access_token)
 	global json_resp
 	json_resp = response.json()
@@ -294,27 +313,27 @@ def get_api_information(access_token):
 	errorfinder()
 	match json_resp["currently_playing_type"]:
 		case "ad":
-			time.sleep(int(conf_vars['sleeptime']))
 			os.system("cls")
 			os.system("title Advertisement")
 			print("Advertisement")
 			print("Upgrade to Spotify Premium to remove advertisements.")
 			print("SCSI will be back shortly.")
 			print("\nSpotiPy Current Song Info v" + conf_vars['version_no'])
+			time.sleep(1)
 			get_api_information(access_token)
 		case "podcast":
-			time.sleep(int(conf_vars['sleeptime']))
 			os.system("cls")
 			os.system("title Podcast")
 			print("We do not support podcasts.")
 			print("Play a song, and we'll get things rolling")
+			time.sleep(5)
 			get_api_information(access_token)
 		case "episode":
-			time.sleep(int(conf_vars['sleeptime']))
 			os.system("cls")
 			os.system("title Podcast")
 			print("We do not support podcasts.")
 			print("Play a song, and we'll get things rolling")
+			time.sleep(5)
 			get_api_information(access_token)
 	if json_resp['timestamp'] == "0":
 		print("Massive error caught")
@@ -400,7 +419,15 @@ def main():
 	try:
 		global current_api_info
 		global last_track_id
-		current_api_info = get_api_information(access_token)
+		try:
+			current_api_info = get_api_information(access_token)
+		except:
+			os.system("cls")
+			os.system("title Error")
+			print("There was an error while trying to get API Information.")
+			print("Attempting to resume in 3 seconds.")
+			time.sleep(3)
+			current_api_info = get_api_information(access_token)
 		current_track_id = current_api_info['id']
 		if current_track_id != last_track_id:
 			if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " by " + current_api_info['artists'] + " | " +current_api_info['album'])
@@ -495,10 +522,11 @@ def main():
 				print("Resuming program in 5 seconds.")
 				time.sleep(5)
 			except KeyboardInterrupt:
-				print("STOP PRESSING THE DAMN STOP COMMAND!")
-				os.system("shutdown -r /t 00")
-
-
+				os.system("cls")
+				print("SCSI Stopped")
+				print("Reason: KeyboardInterrupt")
+				print("SCSI v" + conf_vars['version_no'])
+				exit()
 
 config_object = ConfigParser()
 config_object.read("config.ini")
