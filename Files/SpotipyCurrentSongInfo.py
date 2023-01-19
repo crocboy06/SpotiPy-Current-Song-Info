@@ -1,17 +1,9 @@
 #credit to bingbong for that 204 error help
 #stealing my code is really lame, so don't do that
-from distutils.command.config import config
-from re import A
-import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrowser
-from pynput import keyboard
-from pynput.keyboard import Key, Controller
-from datetime import datetime
-from configparser import ConfigParser
-from tkinter import W
-global conf_vars
-global json_resp, last_track_id, access_token,SPOTIFY_GET_CURRENT_TRACK_URL, title
-global char
-#place BADASS OOP stuff here
+
+#CODE GRAVEYARD
+#Stuff getting removed soon
+#---------------------START GRAVEYARD---------------------
 class ErrorCorrector():
 	def __init__(self):
 		pass
@@ -113,6 +105,25 @@ class ErrorChecker():
 					Correcting.correctError("unsupported")
 		except:
 			pass
+
+#errors = ErrorChecker
+
+
+#---------------------END GRAVEYARD---------------------
+
+from distutils.command.config import config
+from re import A
+import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrowser
+from pynput import keyboard
+from pynput.keyboard import Key, Controller
+from datetime import datetime
+from configparser import ConfigParser
+from tkinter import W
+global conf_vars
+global json_resp, last_track_id, access_token, title, current_api_info
+global char
+#place BADASS OOP stuff here
+
 class songlogger():
 	global starttimestamp
 	def __init__(self, name, artist, id):
@@ -126,11 +137,16 @@ class songlogger():
 		songlog.write("Track: " + self.name +'\n')
 		songlog.write("Artist: " + self.artist +'\n')
 		songlog.write("id: " + self.id +'\n')
-		songlog.write("-----------------------------------\n")
+		songlog.write("-----------------------------------")
 		songlog.close()
 #vars
+config_object = ConfigParser()
+config_object.read("config.ini")
+conf_vars = config_object["CONFVARS"]
+access_token = conf_vars['access_token']
 title = ""
-char = "Illegal Value |()^&<>"
+char = ""
+
 #dictionaries
 forbidden_dict = {
 	"(": 'title.replace("(","[OpPr]")',
@@ -141,26 +157,33 @@ forbidden_dict = {
 	"|": 'title.replace("|","[VBar]")',
 	"&": 'title.replace("&","and")',
 }
-easter_dict = {
+
+if conf_vars['eastereggs'].lower() == "true":
+	easter_dict = {
 	"1e1JKLEDKP7hEQzJfNAgPl": 'os.system("title IN NEW YORK I MILLY ROCK")',
 	"7x8O57b6oXzmbwANbSy2wq": 'os.system("title Real Rx")',
 	"6M14BiCN00nOsba4JaYsHW": 'os.system("title The Spongebob Squarepants Movie (2004)")',
 	"38PAO1pvj6sAhVKb40dmw7": 'os.system("title LEGALIZE NUCLEAR BOMBS")',
 	"2RJAKIw6nIkgZVsAIKhmqz": 'os.system("title im trapped in my head")',
 	"5TRPicyLGbAF2LGBFbHGvO": 'os.system("title HE MADE GRADUATION!!!!")',
-}
+	"2xZIr0k8VNuonD2Xgz1CbP": 'os.system("title Your name is Emakwanem Ibemakanam Ogugua Biosah")',
+	"7MXcmkmyxEYAJf04cbqKoI": 'os.system("""title \"Glow Like Dat\" [Explicit] by Rich Chigga""")',
+	"49X0LAl6faAusYq02PRAY6": 'os.system("""title \"Lady - Hear Me Tonight\" by Modjo [Non Stop Pop FM]""")',
+	"7h8j5w0ywpI7AC2IQvdWqT": 'os.system("title Nextel Chirps and Boost Mobiles")',
+	"6o0IPNoi3PZi9tkoyVGXSB": 'os.system("title IM DA BIGGEST BURD IM DA BIGGEST BURD")',
+	}
 
 #Place functions here
+
 def tokenrefresher():
 	global access_token
-	global access_token
 	global conf_vars
-	keyboard = Controller()
-	timeout_s = 3  # how many seconds to wait 
 	try:
 		import trv2
 		trv2
 	except:
+		keyboard = Controller()
+		timeout_s = 3  # how many seconds to wait 
 		try:
 			webbrowser.open("http://localhost:5000")
 			p = subprocess.run("flask run", timeout=timeout_s)
@@ -177,16 +200,6 @@ def tokenrefresher():
 	
 	os.system("cls")
 	print("Access Token refreshed successfully.")
-	print("Now, Back to the music.")
-	'''
-	os.system("title ACCESS TOKEN DEBUG")
-	print("access_token:", access_token)
-	print("access_token:", access_token)
-	print("REFRESHERVAR:", clnf_vars['access_token'])
-	print("CONFVARS:", conf_vars['access_token'])
-	print("PAUSED FOR 10s BEFORE CONTINUING")
-	time.sleep(10)
-	'''
 
 def errorfinder():
 	global access_token
@@ -236,7 +249,7 @@ def errorfinder():
 def get_api_information(access_token):
 	try:
 		response = requests.get(
-		conf_vars['SPOTIFY_GET_CURRENT_TRACK_URL'],
+		conf_vars['api_link'],
 		headers={
 			"Authorization": f"Bearer {conf_vars['access_token']}"},
 		timeout=10)
@@ -258,6 +271,11 @@ def get_api_information(access_token):
 			print("Tip: Make sure your Wi-Fi/Ethernet is connected, with internet access.")
 		time.sleep(5)
 		get_api_information(access_token)
+	try:
+		if response.status_code == 204:
+			pass
+	except:
+		get_api_information(access_token)
 	if response.status_code == 204:
 		dc = 1
 	while response.status_code == 204:
@@ -272,7 +290,7 @@ def get_api_information(access_token):
 		print("Waiting for music to play" + "." * dc)
 		dc += 1
 		response = requests.get(
-		SPOTIFY_GET_CURRENT_TRACK_URL,
+		conf_vars['api_link'],
 		headers={
 			"Authorization": f"Bearer {access_token}"
 		})
@@ -280,7 +298,7 @@ def get_api_information(access_token):
 		get_api_information(access_token)
 	global json_resp
 	json_resp = response.json()
-	errors = ErrorChecker
+
 	
 	'''
 	match errors.findErrors(json_resp):
@@ -358,6 +376,8 @@ def get_api_information(access_token):
 	albumtype = json_resp['item']['album']['album_type']
 	clock = json_resp['timestamp']
 	devtype = json_resp['device']['type']
+	devid = json_resp['device']['id']
+	releaseDatePrecision = json_resp['item']['album']['release_date_precision']
 
 	current_api_info = {
 		"id": track_id,
@@ -375,27 +395,30 @@ def get_api_information(access_token):
 		"albumtype": albumtype,
 		"clock": clock,
 		"devtype": devtype,
+		"devid": devid,
+		"release_precision": releaseDatePrecision,
 	}
 
 	return current_api_info
 
-def eastereggs():
-	if current_api_info['id'] in easter_dict:
-		exec(easter_dict.get(current_api_info['id']))
-	else:
-		match current_api_info['id']:
-			case "4cOdK2wGLETKBW3PvgPWqT":
-				if conf_vars['logging'] == "True":
-					saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
-					saveinfo.saveInfo()
-				os.system("shutdown -r /t 00")
-			case "6LNoArVBBVZzUTUiAX2aKO":
-				if conf_vars['logging'] == "True":
-					songlog = open('logs/' + starttimestamp + ".txt", "a")
-					saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
-					saveinfo.saveInfo()
-					songlog.close()
-				os.system("shutdown -s /t 00")
+if conf_vars['eastereggs'].lower() == "true":
+	def eastereggs():
+		if current_api_info['id'] in easter_dict:
+			exec(easter_dict.get(current_api_info['id']))
+		else:
+			match current_api_info['id']:
+				case "4cOdK2wGLETKBW3PvgPWqT":
+					if conf_vars['logging'] == "True":
+						saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
+						saveinfo.saveInfo()
+					os.system("shutdown -r /t 00")
+				case "6LNoArVBBVZzUTUiAX2aKO":
+					if conf_vars['logging'] == "True":
+						songlog = open('logs/' + starttimestamp + ".txt", "a")
+						saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
+						saveinfo.saveInfo()
+						songlog.close()
+					os.system("shutdown -s /t 00")
 
 def mainSimple():
 	global current_api_info
@@ -414,6 +437,33 @@ def mainSimple():
 	if conf_vars['progresstype'] == "Remainder": print("Duration: " + current_api_info['duration'] + " / " + current_api_info['progress'])
 	if conf_vars['progresstype'] != "Remainder": print("Duration: " + current_api_info['progress'] + " / " + current_api_info['duration'])
 	time.sleep(int(conf_vars['sleeptime']))
+def lamemusic():
+	devid = current_api_info['devid']
+	queueURL = "https://api.spotify.com/v1/me/player/queue?uri="
+	skipURL = "https://api.spotify.com/v1/me/player/next"
+	track = "spotify:track:1S5knHoNS5hp74t42BcXf0"
+	postUrl = queueURL + track.replace(":", "%3A") + "&deviceid=" + devid
+	loopURL = "https://api.spotify.com/v1/me/player/repeat?state=track"
+	loopPostURL = loopURL + "&device_id=" + devid
+	try:
+		response = requests.post(
+			postUrl,
+			headers={
+				"Authorization": f"Bearer {conf_vars['access_token']}"},
+			timeout=10)
+		response = requests.post(
+			skipURL,
+			headers={
+				"Authorization": f"Bearer {conf_vars['access_token']}"},
+				timeout=10)
+		response = requests.put(
+			loopPostURL,
+			headers={
+				"Authorization": f"Bearer {conf_vars['access_token']}"},
+				timeout=10)
+
+	except:
+		time.sleep(125879)
 
 def main():
 	try:
@@ -428,6 +478,9 @@ def main():
 			print("Attempting to resume in 3 seconds.")
 			time.sleep(3)
 			current_api_info = get_api_information(access_token)
+		if conf_vars['eastereggs'] == "True":
+			if "Yameii Online" in current_api_info['artists']:
+				lamemusic()
 		current_track_id = current_api_info['id']
 		if current_track_id != last_track_id:
 			if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " by " + current_api_info['artists'] + " | " +current_api_info['album'])
@@ -439,41 +492,20 @@ def main():
 		last_track_id = current_track_id
 		title = " by " + str(current_api_info['artists'])
 		for char in forbidden_dict:
-			if char in title:
-				title = eval(forbidden_dict.get(char))
-				break
+			while char in title:
+				title = eval(forbidden_dict.get(char))	
+		
 		if current_api_info['explicit']:
 			title = '"' + str(current_api_info['track_name']) + '" [Explicit]' + title
 		else:
 			title = '"' + str(current_api_info['track_name']) + '"' + title
+		
 		os.system("title " + title)
-		#check ONLY artist, not else
-		'''
-		#Please, someone make this a switch statement.
-		if "(" in current_api_info['artists']:
-			os.system("title Currently Playing Track")
-		elif ")" in current_api_info['artists']:
-			os.system("title Currently Playing Track")
-		elif "<" in current_api_info['artists']:
-			os.system("title Currently Playing Track")
-		elif ">" in current_api_info['artists']:
-			os.system("title Currently Playing Track")
-		elif "|" in current_api_info['artists']:
-			os.system("title Currently Playing Track")
-		elif "^" in current_api_info['artists']:
-			os.system("title Currently Playing Track")
-		elif "&" in current_api_info['artists']:
-			os.system("title Currently Playing Track")
-		else:
-			if current_api_info['explicit']:
-				os.system("title " + '"' + str(current_api_info['track_name']) + '" [Explicit]' + " by " + str(current_api_info['artists']))
-			else:
-				os.system("title " + '"' + str(current_api_info['track_name']) + '"' + " by " + str(current_api_info['artists']))
-		#Please.
-		'''
-		eastereggs()
+
+		if conf_vars['eastereggs'].lower() == "true": eastereggs()
 
 		os.system("cls")
+		
 		print("♪ Now Playing ♪".center(70))
 		
 		match current_api_info['devtype']:
@@ -499,8 +531,11 @@ def main():
 		if current_api_info['explicit']: print("Explicit: Yes")
 		if not current_api_info['explicit']: print("Explicit: No")
 		
-		print("Released: " + current_api_info['release_date'])
+		if current_api_info['release_precision'] != "day": print("Released: " + current_api_info['release_date'] + " (Imprecise)")
+		if current_api_info['release_precision'] == "day": print("Released: " + current_api_info['release_date'])
+		
 		if conf_vars['tracklink'] == "True": print("Play it Here: " + current_api_info['link'])
+		
 		print("TrackID: " + current_track_id) 
 		print("Last Song Change: " + str(datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime("%m-%d-%Y @ %H:%M:%S")))
 		
@@ -528,18 +563,11 @@ def main():
 				print("SCSI v" + conf_vars['version_no'])
 				exit()
 
-config_object = ConfigParser()
-config_object.read("config.ini")
-conf_vars = config_object["CONFVARS"]
 
-access_token = conf_vars['access_token']
 
 cursor.hide()
 
 #migrated all ACCESS_TOKEN to lowercase
-
-#move dis to config
-SPOTIFY_GET_CURRENT_TRACK_URL = 'https://api.spotify.com/v1/me/player'
 
 #it is needed
 last_track_id = None

@@ -66,7 +66,7 @@ def currentlyPlaying():
     try:
         token_info = get_token()
     except:
-        print("User no log in, no trying to FUCK ME here.")
+        print("Re-Authenticating")
         redirect("https://google.com")
     sp = spotipy.Spotify(auth=token_info['access_token'])
     return sp.current_playback()
