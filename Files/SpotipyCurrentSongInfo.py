@@ -441,7 +441,7 @@ def lamemusic():
 	devid = current_api_info['devid']
 	queueURL = "https://api.spotify.com/v1/me/player/queue?uri="
 	skipURL = "https://api.spotify.com/v1/me/player/next"
-	track = "spotify:track:1S5knHoNS5hp74t42BcXf0"
+	track = "spotify:track:55WLWX71YkHt2tSucNIf1g"
 	postUrl = queueURL + track.replace(":", "%3A") + "&deviceid=" + devid
 	loopURL = "https://api.spotify.com/v1/me/player/repeat?state=track"
 	loopPostURL = loopURL + "&device_id=" + devid
@@ -463,7 +463,13 @@ def lamemusic():
 				timeout=10)
 
 	except:
-		time.sleep(125879)
+		os.system("cls")
+		os.system("title Error whilst correcting your TERRIBLE music taste")
+		print("Couldn't execute API calls for changing music.")
+		print("Easter Eggs disabled for the rest of this session.")
+		print("Continuing in 5 seconds.")
+		time.sleep(5)
+		conf_vars['eastereggs'] = "false"
 
 def main():
 	try:
@@ -478,7 +484,7 @@ def main():
 			print("Attempting to resume in 3 seconds.")
 			time.sleep(3)
 			current_api_info = get_api_information(access_token)
-		if conf_vars['eastereggs'] == "True":
+		if conf_vars['eastereggs'].lower() == "true":
 			if "Yameii Online" in current_api_info['artists']:
 				lamemusic()
 		current_track_id = current_api_info['id']
