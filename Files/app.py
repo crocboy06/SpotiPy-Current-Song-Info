@@ -69,7 +69,7 @@ def currentlyPlaying():
         print("Re-Authenticating")
         redirect("https://google.com")
     sp = spotipy.Spotify(auth=token_info['access_token'])
-    return sp.current_playback()
+    return sp.current_playback(market="ES", additional_types=None)
 
 
 def get_token2():
@@ -112,5 +112,5 @@ def create_spotify_oauth():
             client_id="cc0e1614b21a442cafbda6a297331f91",
             client_secret="7e92d1d35b0d45eb8442a0d336babc48",
             redirect_uri="http://localhost:5000/redirect",
-            scope="user-read-currently-playing",
+            scope="user-read-playback-state",
             )

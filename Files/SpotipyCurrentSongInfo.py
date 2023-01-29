@@ -164,13 +164,14 @@ if conf_vars['eastereggs'].lower() == "true":
 	"7x8O57b6oXzmbwANbSy2wq": 'os.system("title Real Rx")',
 	"6M14BiCN00nOsba4JaYsHW": 'os.system("title The Spongebob Squarepants Movie (2004)")',
 	"38PAO1pvj6sAhVKb40dmw7": 'os.system("title LEGALIZE NUCLEAR BOMBS")',
-	"2RJAKIw6nIkgZVsAIKhmqz": 'os.system("title im trapped in my head")',
 	"5TRPicyLGbAF2LGBFbHGvO": 'os.system("title HE MADE GRADUATION!!!!")',
 	"2xZIr0k8VNuonD2Xgz1CbP": 'os.system("title Your name is Emakwanem Ibemakanam Ogugua Biosah")',
 	"7MXcmkmyxEYAJf04cbqKoI": 'os.system("""title \"Glow Like Dat\" [Explicit] by Rich Chigga""")',
 	"49X0LAl6faAusYq02PRAY6": 'os.system("""title \"Lady - Hear Me Tonight\" by Modjo [Non Stop Pop FM]""")',
 	"7h8j5w0ywpI7AC2IQvdWqT": 'os.system("title Nextel Chirps and Boost Mobiles")',
 	"6o0IPNoi3PZi9tkoyVGXSB": 'os.system("title IM DA BIGGEST BURD IM DA BIGGEST BURD")',
+	"2iJuuzV8P9Yz0VSurttIV5": 'os.system("title iam+ PHOTO SOCIAL")',
+	"4Li2WHPkuyCdtmokzW2007": 'os.system("title Remind me, Who was in Paris?")'
 	}
 
 #Place functions here
@@ -276,26 +277,34 @@ def get_api_information(access_token):
 			pass
 	except:
 		get_api_information(access_token)
-	if response.status_code == 204:
-		dc = 1
 	while response.status_code == 204:
-		if dc == 4:
-			dc = 1
 		os.system("cls")
 		os.system("title Nothing Playing")
 		print("There is currently no music playing.")
 		print("")
 		print("SpotiPy Current Song Info.")
 		print("Ver " + conf_vars['version_no'])
-		print("Waiting for music to play" + "." * dc)
-		dc += 1
+		print("Waiting for music to play...")
 		response = requests.get(
 		conf_vars['api_link'],
 		headers={
-			"Authorization": f"Bearer {access_token}"
-		})
+			"Authorization": f"Bearer {conf_vars['access_token']}"},
+		timeout=10)
 		time.sleep(1)
 		get_api_information(access_token)
+	match response.status_code:
+		case 403:  
+			os.system('cls')
+			os.system('title Uncommon Error')
+			print("For some reason, we're forbidden from getting API information")
+			print("Check the API link in config.ini")
+			print("MAKE SURE: The market on your api link matches your reigon. ex: US=ES")
+			print("MAKE SURE: User is authorized in spotify developer portal")
+			print("It should be linked to spotify's API under the \'player\' category")
+			print("Unfortunately, this isn't something we can fix ourselves")
+			print("The program will close in 5 seconds.")
+			time.sleep(5)
+			quit()
 	global json_resp
 	json_resp = response.json()
 
