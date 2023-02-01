@@ -20,4 +20,3 @@ conf_vars['access_token'] = new_token['access_token']
 conf_vars['refresh_token'] = new_token['refresh_token']
 with open('config.ini', 'w') as conf:
         config_object.write(conf)
-pyperclip.copy(new_token['access_token'])
