@@ -15,13 +15,13 @@ import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrows
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 from datetime import datetime
+from time import sleep
 from configparser import ConfigParser
 from tkinter import W
 global conf_vars
 global json_resp, last_track_id, access_token, title, current_api_info, response
 global char
 #place BADASS OOP stuff here
-
 class songlogger():
 	global starttimestamp
 	def __init__(self, name, artist, id):
@@ -115,7 +115,7 @@ def errorfinder():
 				print("We'll retry this in 5 seconds.")
 				if conf_vars['debuginfo']: print("Error Code: TIMESTAMP_EQUAL_TO_ZERO")
 				if conf_vars['extended_debug_info']: print("Most common cause is that the user is inbetween songs.")
-				time.sleep(5)
+				sleep(5)
 				#Once the error has been handled, and the user knows, refresh the current song and get a new JSON response to clear the error
 			get_api_information(access_token)
 	except:
@@ -143,6 +143,7 @@ def errorfinder():
 				os.system("cls")
 				tokenrefresher()
 				access_token = conf_vars['access_token']
+				sleep(1)
 		get_api_information(access_token)
 
 def get_api_information(access_token):
@@ -159,7 +160,7 @@ def get_api_information(access_token):
 			os.system("title TIMEOUT")
 			print("Spotify's API failed to reply within 10 seconds.")
 			print("Retrying in 5 seconds.")
-		time.sleep(5)
+		sleep(5)
 		get_api_information(access_token)
 	except requests.ConnectTimeout:
 		os.system('cls')
@@ -167,7 +168,7 @@ def get_api_information(access_token):
 		print("A connection-related request error has occured.")
 		print("Retrying in 5 seconds.")
 		print("Tip: Make sure your Wi-Fi/Ethernet is connected, with internet access.")
-		time.sleep(5)
+		sleep(5)
 		get_api_information(access_token)
 	except requests.ConnectionError:
 		os.system('cls')
@@ -175,15 +176,19 @@ def get_api_information(access_token):
 		print("A connection-related request error has occured.")
 		print("Retrying in 5 seconds.")
 		print("Tip: Make sure your Wi-Fi/Ethernet is connected, with internet access.")
-		time.sleep(5)
+		sleep(5)
 		get_api_information(access_token)
 	except:
 		os.system('cls')
 		os.system("title Unknown Error")
 		print("We've encountered an error that we don't have a fix for.")
-		print("The API Response code was:", response.status_code)
-		print("Write that down, and implement it into the program.")
+		try:
+			print(f"The API Response code was: {response.status_code}")
+			print("Write that down, and implement it into the program.")
+		except:
+			print("The API Response code was unable to be retrieved.")
 		print("Retrying in 5 seconds.")
+		get_api_information(access_token)
 	match response.status_code:
 			case 204:
 				while response.status_code == 204:
@@ -191,7 +196,7 @@ def get_api_information(access_token):
 					os.system("title Nothing Playing")
 					print("There is currently no music playing.\n")
 					print("SpotiPy Current Song Info.")
-					print("Ver " + conf_vars['version_no'])
+					print(f"Ver {conf_vars['version_no']}")
 					print("Waiting for music to play...")
 					try:
 						response = requests.get(
@@ -199,12 +204,12 @@ def get_api_information(access_token):
 						headers={
 							"Authorization": f"Bearer {conf_vars['access_token']}"},
 						timeout=10)
-						time.sleep(1)
+						sleep(1)
 					except requests.ReadTimeout:
 						os.system('cls')
 						os.system('title Debug//Nothing Playing')
 						print("timeout exceeded nothing returned")
-						time.sleep(10)
+						sleep(10)
 			case 403:  
 				os.system('cls')
 				os.system('title Uncommon Error')
@@ -215,7 +220,7 @@ def get_api_information(access_token):
 				print("It should be linked to spotify's API under the \'player\' category")
 				print("Unfortunately, this isn't something the program can fix automatically")
 				print("The program will close in 5 seconds.")
-				time.sleep(5)
+				sleep(5)
 				quit()
 			case 401:
 				os.system('cls')
@@ -246,26 +251,26 @@ def get_api_information(access_token):
 			print("Advertisement")
 			print("Upgrade to Spotify Premium to remove advertisements.")
 			print("SCSI will be back shortly.")
-			print("\nSpotiPy Current Song Info v" + conf_vars['version_no'])
-			time.sleep(1)
+			print(f"\nSpotiPy Current Song Info v{conf_vars['version_no']}")
+			sleep(1)
 			get_api_information(access_token)
 		case "podcast":
 			os.system("cls")
 			os.system("title Podcast")
 			print("We do not support podcasts.")
 			print("Play a song, and we'll get things rolling")
-			time.sleep(5)
+			sleep(5)
 			get_api_information(access_token)
 		case "episode":
 			os.system("cls")
 			os.system("title Podcast")
 			print("We do not support podcasts.")
 			print("Play a song, and we'll get things rolling")
-			time.sleep(5)
+			sleep(5)
 			get_api_information(access_token)
 	if json_resp['timestamp'] == "0":
 		print("timestamp error (should never be seen)")
-		time.sleep(1123)
+		sleep(1123)
 	track_id = json_resp['item']['id']
 	track_name = json_resp['item']['name']
 	artists = [artist for artist in json_resp['item']['artists']]
@@ -331,9 +336,9 @@ def mainSimple():
 	global current_api_info
 	current_api_info = get_api_information(access_token)
 	if current_api_info['explicit']:
-		os.system('title "' + current_api_info['track_name'] + '" [Explicit]')
+		os.system(f'title \"{current_api_info["track_name"]}\"[Explicit]')
 	else:
-		os.system('title "' + current_api_info['track_name'] + '"')
+		os.system(f'title \"{current_api_info["track_name"]}\"')
 	os.system("cls")
 	print("Artist(s): " + current_api_info['artists'])
 	print("Song: " + current_api_info['track_name'])
@@ -343,7 +348,7 @@ def mainSimple():
 		print("Album: " + current_api_info['album'])
 	if conf_vars['progresstype'] == "Remainder": print("Duration: " + current_api_info['duration'] + " / " + current_api_info['progress'])
 	if conf_vars['progresstype'] != "Remainder": print("Duration: " + current_api_info['progress'] + " / " + current_api_info['duration'])
-	time.sleep(int(conf_vars['sleeptime']))
+	sleep(int(conf_vars['sleeptime']))
 def lamemusic():
 	devid = current_api_info['devid']
 	queueURL = "https://api.spotify.com/v1/me/player/queue?uri="
@@ -375,7 +380,7 @@ def lamemusic():
 		print("Couldn't execute API calls for changing music.")
 		print("Easter Eggs disabled for the rest of this session.")
 		print("Continuing in 5 seconds.")
-		time.sleep(5)
+		sleep(5)
 		conf_vars['eastereggs'] = "false"
 
 def main():
@@ -389,7 +394,7 @@ def main():
 			os.system("title Error")
 			print("There was an error while trying to get API Information.")
 			print("Attempting to resume in 3 seconds.")
-			time.sleep(3)
+			sleep(3)
 			current_api_info = get_api_information(access_token)
 		if conf_vars['eastereggs'].lower() == "true":
 			if "Yameii Online" in current_api_info['artists']:
@@ -409,9 +414,9 @@ def main():
 				title = eval(forbidden_dict.get(char))	
 		
 		if current_api_info['explicit']:
-			title = '"' + str(current_api_info['track_name']) + '" [Explicit]' + title
+			title = f'\"{current_api_info["track_name"]}\" [Explicit]{title}'
 		else:
-			title = '"' + str(current_api_info['track_name']) + '"' + title
+			title = f'\"{current_api_info["track_name"]}\"{title}'
 		
 		os.system("title " + title)
 
@@ -423,58 +428,58 @@ def main():
 		
 		match current_api_info['devtype']:
 			case "Smartphone":
-				print("Pb Device: " + current_api_info['devicename'] + " (Smartphone) | " + str(current_api_info['volume']) + "% Volume")
+				print(f"Pb Device: {current_api_info['devicename']} (Smartphone) | {current_api_info['volume']}% Volume")
 			case "Computer":
-				print("Pb Device: " + current_api_info['devicename'] + " (Computer) | " + str(current_api_info['volume']) + "% Volume")
+				print(f"Pb Device: {current_api_info['devicename']} (Computer) | {current_api_info['volume']}% Volume")
 			case "Tablet":
-				print("Pb Device: " + current_api_info['devicename'] + " (Tablet) | " + str(current_api_info['volume']) + "% Volume")
+				print(f"Pb Device: {current_api_info['devicename']} (Tablet) | {current_api_info['volume']}% Volume")
 
-		if current_api_info['playing']: print("Pb Status: Playing")
+		if current_api_info['playing']: print("Pb Status: Playing") 
 		if not current_api_info['playing']: print("Pb Status: Paused")
 		
-		print("Artist(s): " + current_api_info['artists'])
-		print("Song: " + current_api_info['track_name'])
+		print(f"Artist(s): {current_api_info['artists']}")
+		print(f"Song: {current_api_info['track_name']}")
 
-		if current_api_info['albumtype'] == "album": print("Album: " + current_api_info['album'])
-		if current_api_info['albumtype'] != "album": print("Album: " + current_api_info['album'] + " [" + current_api_info['albumtype'].capitalize() + "]")
+		if current_api_info['albumtype'] == "album": print(f"Album: {current_api_info['album']}")
+		if current_api_info['albumtype'] != "album": print(f"Album: {current_api_info['album']} [{current_api_info['albumtype'].capitalize()}]")
 		
-		if conf_vars['progresstype'] == "Remainder": print("Duration: " + current_api_info['duration'] + " / " + current_api_info['progress'])
-		if conf_vars['progresstype'] != "Remainder": print("Duration: " + current_api_info['progress'] + " / " + current_api_info['duration'])
+		if conf_vars['progresstype'] == "Remainder": print(f"Duration: {current_api_info['duration']} / {current_api_info['progress']}")
+		if conf_vars['progresstype'] != "Remainder": print(f"Duration: {current_api_info['progress']} / {current_api_info['duration']}")
 	
 		if current_api_info['explicit']: print("Explicit: Yes")
 		if not current_api_info['explicit']: print("Explicit: No")
 		
-		if current_api_info['release_precision'] != "day": print("Released: " + current_api_info['release_date'] + " (Imprecise)")
-		if current_api_info['release_precision'] == "day": print("Released: " + current_api_info['release_date'])
+		if current_api_info['release_precision'] != "day": print(f"Released: {current_api_info['release_date']} (Imprecise)")
+		if current_api_info['release_precision'] == "day": print(f"Released: {current_api_info['release_date']}")
 		
-		if conf_vars['tracklink'] == "True": print("Play it Here: " + current_api_info['link'])
+		if conf_vars['tracklink'] == "True": print(f"Play it Here: {current_api_info['link']}")
 		
 		print("TrackID: " + current_track_id) 
-		print("Last Song Change: " + str(datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime("%m-%d-%Y @ %H:%M:%S")))
+		print(f"Last Song Change: {datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime('%m-%d-%Y @ %H:%M:%S')}")
 		
 		
 		#do not touch this please
-		time.sleep(int(conf_vars['sleeptime']))
+		sleep(int(conf_vars['sleeptime']))
 	except KeyboardInterrupt:
 		try:
 			os.system('cls')
 			os.system("title Program Stopped.")
 			print("CTRL + C Pressed, Program Paused.")
-			print("Last Song: " + current_api_info['track_name'] + " by " + current_api_info['artists'] + " | " +current_api_info['album'])
+			print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
 			print("Press CTRL + C to resume function")
-			time.sleep(20000000)
+			sleep(20000000)
 		except KeyboardInterrupt:
 			try:
 				os.system('cls')
 				os.system("title Resuming...")
 				print("Resuming program in 5 seconds.")
-				time.sleep(5)
+				sleep(5)
 			except KeyboardInterrupt:
 				os.system("cls")
 				print("SCSI Stopped")
 				print("Reason: KeyboardInterrupt")
-				print("SCSI v" + conf_vars['version_no'])
-				exit()
+				print(f"SCSI v{conf_vars['version_no']}")
+				exit("-----Program Terminated-----")
 
 
 
