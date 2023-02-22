@@ -19,7 +19,7 @@ from time import sleep
 from configparser import ConfigParser
 from tkinter import W
 global conf_vars
-global json_resp, last_track_id, access_token, title, current_api_info, response
+global json_resp, last_track_id, access_token, title, current_api_info, response, lines
 global char
 #place BADASS OOP stuff here
 class songlogger():
@@ -44,6 +44,7 @@ conf_vars = config_object["CONFVARS"]
 access_token = conf_vars['access_token']
 title = ""
 char = ""
+eligibility = ""
 
 #dictionaries
 forbidden_dict = {
@@ -69,7 +70,8 @@ if conf_vars['eastereggs'].lower() == "true":
 	"7h8j5w0ywpI7AC2IQvdWqT": 'os.system("title Nextel Chirps and Boost Mobiles")',
 	"6o0IPNoi3PZi9tkoyVGXSB": 'os.system("title IM DA BIGGEST BURD IM DA BIGGEST BURD")',
 	"2iJuuzV8P9Yz0VSurttIV5": 'os.system("title iam+ PHOTO SOCIAL")',
-	"4Li2WHPkuyCdtmokzW2007": 'os.system("title Remind me, Who was in Paris?")'
+	"4Li2WHPkuyCdtmokzW2007": 'os.system("title Remind me, Who was in Paris?")',
+	"373gDROnujxNTFa1FojYIl": 'os.system("title Numb (Pt. 2) by Linkin Park")'
 	}
 
 #Place functions here
@@ -188,7 +190,20 @@ def get_api_information(access_token):
 		except:
 			print("The API Response code was unable to be retrieved.")
 		print("Retrying in 5 seconds.")
-		get_api_information(access_token)
+		try:
+			get_api_information(access_token)
+		except RecursionError:
+			os.system('cls')
+			os.system("title Recursion Max Depth Reached.")
+			print("You've run the program so long that you've hit a recursion error")
+			print("Re-Launch the program to fix this issue.")
+			quit()
+		except:
+			os.system('cls')
+			os.system('title critical STOP')
+			print(f"Check Call Stack in Debugging mode for more details.\nLast Song:{current_api_info.get('track_name')}\nTIME: {datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime('%m-%d-%Y @ %H:%M:%S')}\nQuitting Program")
+			sleep(200000)
+			quit()
 	match response.status_code:
 			case 204:
 				while response.status_code == 204:
@@ -233,11 +248,11 @@ def get_api_information(access_token):
 			case 200:
 				pass
 
-	try:
-		if response.status_code == 204:
-			pass
-	except:
-		get_api_information(access_token)
+#	try:
+#		if response.status_code == 204:
+#			pass
+#	except:
+#		get_api_information(access_token)
 	
 	global json_resp
 	json_resp = response.json()
@@ -330,8 +345,19 @@ if conf_vars['eastereggs'].lower() == "true":
 						saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
 						saveinfo.saveInfo()
 						songlog.close()
-					os.system("shutdown -s /t 00")
-
+					try:
+						os.system("cls")
+						os.system('title ------- SHUTDOWN IMMINENT -------')
+						print("Stop shutdown by pressing CTRL + C in the next 10 seconds.")
+						print("If the shutdown isn't aborted in that time, computer will shutdown.")
+						print(f"SCSI v{conf_vars['version_no']}")
+						sleep(10)
+						os.system("shutdown -s /t 00")
+					except KeyboardInterrupt:
+						print("ABORTED SHUTDOWN")
+						print("Play a new song to prevent loop")
+						print("Returning to normal in 10 seconds...")
+						sleep(10)
 def mainSimple():
 	global current_api_info
 	current_api_info = get_api_information(access_token)
@@ -387,6 +413,7 @@ def main():
 	try:
 		global current_api_info
 		global last_track_id
+		global eligibility
 		try:
 			current_api_info = get_api_information(access_token)
 		except:
@@ -402,13 +429,18 @@ def main():
 		current_track_id = current_api_info['id']
 		if current_track_id != last_track_id:
 			if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " by " + current_api_info['artists'] + " | " +current_api_info['album'])
+			eligibility_year = int(current_api_info['release_date'].split("-")[0])
+			if 2000 <= eligibility_year < 2020:
+				eligibility = "Yes"
+			else:
+				eligibility = "No"
 
 		if conf_vars['logging'] == "True":
 			if current_track_id != last_track_id:
 				saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
 				saveinfo.saveInfo()
 		last_track_id = current_track_id
-		title = " by " + str(current_api_info['artists'])
+		title = f" by {str(current_api_info['artists'])}"
 		for char in forbidden_dict:
 			while char in title:
 				title = eval(forbidden_dict.get(char))	
@@ -428,11 +460,25 @@ def main():
 		
 		match current_api_info['devtype']:
 			case "Smartphone":
-				print(f"Pb Device: {current_api_info['devicename']} (Smartphone) | {current_api_info['volume']}% Volume")
+				try:
+					print(f"Pb Device: {current_api_info['devicename']} (Smartphone) | {current_api_info['volume']}% Volume")
+				except:
+					print(f"Pb Device: Unavailable | Volume: Unavailable")
 			case "Computer":
-				print(f"Pb Device: {current_api_info['devicename']} (Computer) | {current_api_info['volume']}% Volume")
+				try:
+					print(f"Pb Device: {current_api_info['devicename']} (Computer) | {current_api_info['volume']}% Volume")
+				except:
+					print(f"Pb Device: Unavailable | Volume: Unavailable")
 			case "Tablet":
-				print(f"Pb Device: {current_api_info['devicename']} (Tablet) | {current_api_info['volume']}% Volume")
+				try:
+					print(f"Pb Device: {current_api_info['devicename']} (Tablet) | {current_api_info['volume']}% Volume")
+				except:
+					print(f"Pb Device: Unavailable | Volume: Unavailable")
+			case "Unknown":
+				try:
+					print(f"Pb Device: {current_api_info['devicename']} (Unknown) | {current_api_info['volume']}% Volume")
+				except:
+					print(f"Pb Device: Unavailable | Volume: Unavailable")
 
 		if current_api_info['playing']: print("Pb Status: Playing") 
 		if not current_api_info['playing']: print("Pb Status: Paused")
@@ -449,8 +495,8 @@ def main():
 		if current_api_info['explicit']: print("Explicit: Yes")
 		if not current_api_info['explicit']: print("Explicit: No")
 		
-		if current_api_info['release_precision'] != "day": print(f"Released: {current_api_info['release_date']} (Imprecise)")
-		if current_api_info['release_precision'] == "day": print(f"Released: {current_api_info['release_date']}")
+		if current_api_info['release_precision'] != "day": print(f"Released: {current_api_info['release_date']} (Imprecise) | Eligible: {eligibility}")
+		if current_api_info['release_precision'] == "day": print(f"Released: {current_api_info['release_date']} | Eligible: {eligibility}")
 		
 		if conf_vars['tracklink'] == "True": print(f"Play it Here: {current_api_info['link']}")
 		
@@ -467,7 +513,8 @@ def main():
 			print("CTRL + C Pressed, Program Paused.")
 			print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
 			print("Press CTRL + C to resume function")
-			sleep(20000000)
+			while True:
+				time.sleep(10000)
 		except KeyboardInterrupt:
 			try:
 				os.system('cls')
@@ -497,8 +544,8 @@ if conf_vars['logging'] == "True":
 	songlog.write("SONG LOG FOR SESSION | " + starttimestamp)
 	songlog.close()
 
-
 if __name__ == '__main__': 
+	lines = 12
 	match conf_vars['mode']:
 		case "simple":
 			os.system("mode con cols=70 lines=5")
@@ -506,12 +553,28 @@ if __name__ == '__main__':
 				mainSimple()
 
 		case "default":
-			if conf_vars['tracklink'] == "False": os.system("mode con cols=70 lines=12")
-			else: os.system("mode con cols=70 lines=13")
+			if conf_vars['tracklink'] == "False": os.system(f"mode con cols=70 lines={str(lines)}")
+			else: 
+				lines += 1
+				os.system(f"mode con cols=70 lines={lines}")
 			while True:
 				main()
 		case _:
-			if conf_vars['tracklink'] == "False": os.system("mode con cols=70 lines=12")
-			else: os.system("mode con cols=70 lines=13")
+			if conf_vars['tracklink'] == "False": os.system(f"mode con cols=70 lines={str(lines)}")
+			else: os.system(f"mode con cols=70 lines={lines}")
 			while True:
 				main()
+def consolespecs():
+	lines = 12
+	match conf_vars['mode'].lower():
+		case "simple":
+			lines = 5
+		case "default":
+			if conf_vars['tracklink'].lower() == "true":
+				lines += 1
+		case _:
+			lines = 13
+	match conf_vars['date_check'].lower():
+		case "true":
+			lines += 1
+	os.system(f"mode con cols=70 lines={lines}")
