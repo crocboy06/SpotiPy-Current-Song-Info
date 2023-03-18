@@ -19,11 +19,13 @@ def favicon():
 def skip():
     global token_info
     SPOTIFY_SKIP_URL = "https://api.spotify.com/v1/me/player/next"
+    sp = spotipy.Spotify(auth=token_info['access_token'])
+    spr = sp.current_playback(market="ES", additional_types=None)
     response = requests.post(
-		SPOTIFY_SKIP_URL,
-		headers={
-			"Authorization": f"Bearer {token_info['access_token']}"
-		})
+			SPOTIFY_SKIP_URL,
+			headers={
+				"Authorization": f"Bearer {token_info['access_token']}"},
+				timeout=10)
     return redirect('/currentlyPlaying')
 
 

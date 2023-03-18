@@ -71,7 +71,8 @@ if conf_vars['eastereggs'].lower() == "true":
 	"6o0IPNoi3PZi9tkoyVGXSB": 'os.system("title IM DA BIGGEST BURD IM DA BIGGEST BURD")',
 	"2iJuuzV8P9Yz0VSurttIV5": 'os.system("title iam+ PHOTO SOCIAL")',
 	"4Li2WHPkuyCdtmokzW2007": 'os.system("title Remind me, Who was in Paris?")',
-	"373gDROnujxNTFa1FojYIl": 'os.system("title Numb (Pt. 2) by Linkin Park")'
+	"373gDROnujxNTFa1FojYIl": 'os.system("title Numb (Pt. 2) by Linkin Park")',
+	"4UoDSs5VAw6xHdzbkjocTM": 'os.system("title THEY SAY THEY WANNA READ MY MIND 🔊🔊🔊")'
 	}
 
 #Place functions here
@@ -140,13 +141,33 @@ def errorfinder():
 				conf_vars['sleeptime'] = str(slt)
 				with open('config.ini', 'w') as conf:
 					config_object.write(conf)
-			case 401:
-				os.system("title Refreshing Token...")
-				os.system("cls")
-				tokenrefresher()
-				access_token = conf_vars['access_token']
-				sleep(1)
-		get_api_information(access_token)
+			case 401: #FIX THIS RIGHT NEOOWWWW
+				os.system('cls')
+				os.system('title Error')
+				def Function401():
+					tokenrefresher()
+					response = requests.get(
+						conf_vars['api_link'],
+						headers={
+							"Authorization": f"Bearer {conf_vars['access_token']}"},
+						timeout=10)
+					match response.status_code:
+						case 401:
+							print("We are unable to fix the error automatically")
+							print("Error Reference '401 refresh failed'")
+							print("Closing Automatically in 10 Seconds.")
+							sleep(10)
+							quit()
+						case 429:
+							sleep(10)
+						case 200:
+							pass
+						case _:
+							quit()
+							
+									
+					get_api_information(access_token)
+				Function401()
 
 def get_api_information(access_token):
 	try:
@@ -201,9 +222,7 @@ def get_api_information(access_token):
 		except:
 			os.system('cls')
 			os.system('title critical STOP')
-			print(f"Check Call Stack in Debugging mode for more details.\nLast Song:{current_api_info.get('track_name')}\nTIME: {datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime('%m-%d-%Y @ %H:%M:%S')}\nQuitting Program")
-			sleep(200000)
-			quit()
+			print(f"Check Call Stack in Debugging mode for more details.\nQuitting Program")
 	match response.status_code:
 			case 204:
 				while response.status_code == 204:
@@ -247,6 +266,11 @@ def get_api_information(access_token):
 				get_api_information(access_token)
 			case 200:
 				pass
+			case _:
+				os.system('cls')
+				os.system('title API Response code error')
+				print(f"Given API Response code:{response.status_code}")
+				sleep(10)
 
 #	try:
 #		if response.status_code == 204:
@@ -286,6 +310,27 @@ def get_api_information(access_token):
 	if json_resp['timestamp'] == "0":
 		print("timestamp error (should never be seen)")
 		sleep(1123)
+	try:
+		if json_resp['item']['id'] == None:
+			os.system('cls')
+			os.system("title JSON Response Error")
+			print("JSON_RESP Error")
+			print(json_resp)
+			print("Retrying in 5 seconds.")
+			sleep(15)
+			get_api_information(access_token)
+	except:
+		os.system('cls')
+		os.system('title JSON Response Error')
+		print("JSON_RESP Error")
+		print("This can be caused by Spotify's new DJ feature.")
+		print("Retrying in 5 seconds.")
+		sleep(5)
+		get_api_information(access_token)
+	if json_resp['timestamp'] == "0":
+		print("timestamp error (should never be seen)")
+		sleep(1123)
+	
 	track_id = json_resp['item']['id']
 	track_name = json_resp['item']['name']
 	artists = [artist for artist in json_resp['item']['artists']]
@@ -327,6 +372,7 @@ def get_api_information(access_token):
 	}
 
 	return current_api_info
+	 
 
 if conf_vars['eastereggs'].lower() == "true":
 	def eastereggs():
@@ -381,8 +427,7 @@ def lamemusic():
 	skipURL = "https://api.spotify.com/v1/me/player/next"
 	track = "spotify:track:55WLWX71YkHt2tSucNIf1g"
 	postUrl = queueURL + track.replace(":", "%3A") + "&deviceid=" + devid
-	loopURL = "https://api.spotify.com/v1/me/player/repeat?state=track"
-	loopPostURL = loopURL + "&device_id=" + devid
+	loopPostURL = "https://api.spotify.com/v1/me/player/repeat?state=track" + "&device_id=" + devid
 	try:
 		response = requests.post(
 			postUrl,
@@ -424,8 +469,11 @@ def main():
 			sleep(3)
 			current_api_info = get_api_information(access_token)
 		if conf_vars['eastereggs'].lower() == "true":
-			if "Yameii Online" in current_api_info['artists']:
-				lamemusic()
+			try:
+				if "Yameii Online" in current_api_info['artists']:
+					lamemusic()
+			except:
+				print("Check for artist failed.")
 		current_track_id = current_api_info['id']
 		if current_track_id != last_track_id:
 			if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " by " + current_api_info['artists'] + " | " +current_api_info['album'])

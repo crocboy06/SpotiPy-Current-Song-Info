@@ -14,9 +14,26 @@ def create_spotify_oauth():
             scope="user-read-currently-playing",
             )
 
-sp_oauth = create_spotify_oauth()
-new_token = sp_oauth.refresh_access_token(conf_vars['refresh_token'])
-conf_vars['access_token'] = new_token['access_token']
-conf_vars['refresh_token'] = new_token['refresh_token']
-with open('config.ini', 'w') as conf:
+try:
+    sp_oauth = create_spotify_oauth()
+    new_token = sp_oauth.refresh_access_token(conf_vars['refresh_token'])
+    conf_vars['access_token'] = new_token['access_token']
+    conf_vars['refresh_token'] = new_token['refresh_token']
+    with open('config.ini', 'w') as conf:
         config_object.write(conf)
+except:
+    os.system("cls")
+    from time import sleep
+    print("Unknown error occured while trying to refresh access token.\nTrying again in 5 seconds.")
+    sleep(5)
+    try:
+        sp_oauth = create_spotify_oauth()
+        new_token = sp_oauth.refresh_access_token(conf_vars['refresh_token'])
+        conf_vars['access_token'] = new_token['access_token']
+        conf_vars['refresh_token'] = new_token['refresh_token']
+        with open('config.ini', 'w') as conf:
+            config_object.write(conf)
+    except:
+        print(0/0)
+
+       
