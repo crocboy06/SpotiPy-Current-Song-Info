@@ -4,7 +4,6 @@
 #CODE GRAVEYARD
 #Stuff getting removed soon
 #---------------------START GRAVEYARD---------------------
-#errors = ErrorChecker
 
 
 #---------------------END GRAVEYARD---------------------
@@ -19,11 +18,29 @@ from time import sleep
 from configparser import ConfigParser
 from tkinter import W
 global conf_vars
-global json_resp, last_track_id, access_token, title, current_api_info, response, lines
+global json_resp, last_track_id, access_token, title, current_api_info, response, lines, starttimestamp
 global char
+
+starttimestamp = str(datetime.fromtimestamp(datetime.now().timestamp()).strftime("%m-%d-%Y, %H-%M-%S"))
+songlog = open("logs/" + starttimestamp + ".txt", "w+")
+songlog.write("SONG LOG FOR SESSION | " + starttimestamp)
+songlog.close()
+
+
 #place BADASS OOP stuff here
+class eventlogger():
+	def __init__(self):
+		pass
+	def logEvent(self, event, adtl_details):
+		self.event = event
+
+		self.details = adtl_details
+		logg = open('logs/' + starttimestamp + ".txt", "a")
+		logg.write(f"\nRecorded Event @ {datetime.now().strftime('%H:%M:%S')}")
+		logg.write(f"\n{self.event}")
+		logg.write(f"\nAdditional Details: {self.details}\n")
+		logg.close()
 class songlogger():
-	global starttimestamp
 	def __init__(self, name, artist, id):
 		self.name = name
 		self.artist = artist
@@ -38,6 +55,7 @@ class songlogger():
 		songlog.write("-----------------------------------")
 		songlog.close()
 #vars
+last_track_id = None
 config_object = ConfigParser()
 config_object.read("config.ini")
 conf_vars = config_object["CONFVARS"]
@@ -45,6 +63,7 @@ access_token = conf_vars['access_token']
 title = ""
 char = ""
 eligibility = ""
+log = eventlogger()
 
 #dictionaries
 forbidden_dict = {
@@ -72,104 +91,190 @@ if conf_vars['eastereggs'].lower() == "true":
 	"2iJuuzV8P9Yz0VSurttIV5": 'os.system("title iam+ PHOTO SOCIAL")',
 	"4Li2WHPkuyCdtmokzW2007": 'os.system("title Remind me, Who was in Paris?")',
 	"373gDROnujxNTFa1FojYIl": 'os.system("title Numb (Pt. 2) by Linkin Park")',
-	"4UoDSs5VAw6xHdzbkjocTM": 'os.system("title THEY SAY THEY WANNA READ MY MIND 🔊🔊🔊")'
+	"4UoDSs5VAw6xHdzbkjocTM": 'os.system("title THEY SAY THEY WANNA READ MY MIND 🔊🔊🔊")',
+	"3QzAOrNlsabgbMwlZt7TAY": 'os.system("title Axel in Harlem by Animan Studios")',
+	"6E1YebXpPPtujMUljDNlOo": 'os.system("title Audi RS6 300km/h")',
 	}
 
 #Place functions here
 
 def tokenrefresher():
+	log = eventlogger()
+	log.logEvent("Token Refresher Started", "wait for refresh status...")
 	global access_token
 	global conf_vars
 	try:
 		import trv2
-		trv2
+		trv2		
+		config_object = ConfigParser()
+		config_object.read("config.ini")
+		conf_vars = config_object["CONFVARS"]
+		access_token = conf_vars['access_token']
+		with open('config.ini', 'w') as conf:
+			config_object.write(conf)
+		log.logEvent("Token Refresher: Success", "No exceptions thrown | TRV2")
 	except:
+		log.logEvent("Token Refresher: Unsuccessful", "Reverting to Backup flask method.")
 		keyboard = Controller()
 		timeout_s = 3  # how many seconds to wait 
 		try:
 			webbrowser.open("http://localhost:5000")
 			p = subprocess.run("flask run", timeout=timeout_s)
+			log.logEvent("Token Refresh: Web Browser", "Web Browser opened, subprocess running...")
 		except subprocess.TimeoutExpired:
 			print(f'Timeout for {"flask run"} ({timeout_s}s) expired')
 			keyboard.press(Key.ctrl)
 			keyboard.press(W)
 			keyboard.release(Key.ctrl)
 			keyboard.release(W)
+			log.logEvent("Token Refresher: Complete", "Process Complete. (Backup method)")
 	config_object = ConfigParser()
 	config_object.read("config.ini")
 	conf_vars = config_object["CONFVARS"]
 	access_token = conf_vars['access_token']
+	with open('config.ini', 'w') as conf:
+		config_object.write(conf)
 	
 	os.system("cls")
-	print("Access Token refreshed successfully.")
+
+def clearTitle(title):
+	os.system('cls')
+	os.system(f"title {title}")
+
+def consolespecs():
+	lines = 12
+	match conf_vars['mode'].lower():
+		case "simple":
+			lines = 5
+		case "default":
+			if conf_vars['tracklink'].lower() == "true":
+				lines += 1
+		case _:
+			lines = 13
+	match conf_vars['date_check'].lower():
+		case "true":
+			lines += 1
+	os.system(f"mode con cols=70 lines={lines}")
 
 def errorfinder():
 	global access_token
+	log = eventlogger()
 	try:
-		#This was implemented to prevent "NoneType is not subscriptable" TypeError.
-		#This error was found to occur when the program calls to the API to try and get current song information while the user is inbetween songs.
-		#Most likely the inbetween period is over, so lets get song information after we wait 5 seconds
 		if json_resp['timestamp'] == 0:
-			if not conf_vars['silenterrors']:
-				os.system("cls")
-				os.system("title " + "Error")
-				print("Whoops! You caught us at a bad time.")
-				print("Something's gone wrong.")
-				print("We'll retry this in 5 seconds.")
-				if conf_vars['debuginfo']: print("Error Code: TIMESTAMP_EQUAL_TO_ZERO")
-				if conf_vars['extended_debug_info']: print("Most common cause is that the user is inbetween songs.")
-				sleep(5)
-				#Once the error has been handled, and the user knows, refresh the current song and get a new JSON response to clear the error
-			get_api_information(access_token)
+			log.logEvent("Error Finder: Timestamp 0", "Timestamp ignored, re-acquiring info")
+			main()
 	except:
-		#If the error is something else, like an API Rate limit, it will follow through this, and give some error specific information for common problems.
-		#If the JSON response has an error, let's tell the user, and handle it.
-		os.system("cls")
-		os.system("title " + "Oops!")
+		clearTitle("Error")
 		print("We've encountered an error.")
-		print("The Error code we recieved is: " + str(json_resp['error']['status']))
-		print("Additional information: " + str(json_resp['error']['message']))
+		log.logEvent("Error Finder: API Response", f"Code= {json_resp['error']['status']}, API Info: {json_resp['error']['message']}")
+		print(f"The Error code we recieved is: {json_resp['error']['status']}")
+		print(f"Additional information: {json_resp['error']['message']}")
 		match json_resp['error']['status']:
 			case 429:
-				#API Rate print removed. Tis gay and unneccesary
 				if int(conf_vars['sleeptime']) > 5:
-					os.system("cls")
+					log.logEvent("Error Finder: 429/Rate Limit", "Program Halted, Sleeptime excessive.")
+					clearTitle("Rate Limit Stop")
 					print("Repeated API Rate limit errors, please refresh your token, and try again later.")
 					quit()
-				slt = int(conf_vars['sleeptime'])
-				slt += 1
+				slt = int(conf_vars['sleeptime']) + 1
 				conf_vars['sleeptime'] = str(slt)
+				log.logEvent("Error Finder: 429/Sleeptime", "Sleeptime Increased.")
 				with open('config.ini', 'w') as conf:
 					config_object.write(conf)
-			case 401: #FIX THIS RIGHT NEOOWWWW
-				os.system('cls')
-				os.system('title Error')
-				def Function401():
-					tokenrefresher()
-					response = requests.get(
-						conf_vars['api_link'],
-						headers={
-							"Authorization": f"Bearer {conf_vars['access_token']}"},
-						timeout=10)
-					match response.status_code:
-						case 401:
-							print("We are unable to fix the error automatically")
-							print("Error Reference '401 refresh failed'")
-							print("Closing Automatically in 10 Seconds.")
-							sleep(10)
-							quit()
-						case 429:
-							sleep(10)
-						case 200:
-							pass
-						case _:
-							quit()
-							
-									
-					get_api_information(access_token)
-				Function401()
+			case 401:
+				tokenrefresher()
+				access_token = conf_vars['access_token']
+				log.logEvent("Function401", "Refreshed (Line 185)")
+
+def errorfinder():
+	global access_token
+	match current_api_info:
+		case 204:
+			clearTitle("Idle - SpotiPy Current Song Info")
+			print("There is currently no music playing.\n")
+			print("SpotiPy Current Song Info")
+			print(f"Ver {conf_vars['version_no']}")
+			if conf_vars['deep_idle'].capitalize() == "True": print("Deep Idle Enabled. API Requests limited to once every 30 seconds.")
+			print("Waiting for music to play.")
+			if conf_vars['deep_idle'].upper() == "TRUE": timeout2 = 30 
+			else: timeout2 = 5
+			sleep(timeout2)
+		case 429:
+			if int(conf_vars['sleeptime']) > 5:
+				log.logEvent("MatchAPIinfo", "Program stopping, Sleeptime too much.")
+				clearTitle("Rate Limit Stop")
+				print("Repeated API Rate limit errors, please refresh your token, and try again later.")
+				quit()
+			slt = int(conf_vars['sleeptime']) + 1 
+			conf_vars['sleeptime'] = str(slt)
+			log.logEvent("MatchAPIinfo: Rate Limit", "Sleeptime Increased.")
+			with open('config.ini', 'w') as conf:
+				config_object.write(conf)
+			sleep(5)
+		case 401:
+			tokenrefresher()
+			access_token = conf_vars['access_token']
+			log.logEvent("Function401", "Refreshed (Line 185)")
+		case 403:
+			print("For some reason, we're forbidden from getting API information")
+			print("Check the API link in config.ini")
+			print("It should be linked to spotify's API under the \'player\' category")
+			print("MAKE SURE: The market on your api link matches your reigon. ex: US=ES")
+			print("MAKE SURE: User is authorized in spotify developer portal")
+			print("Unfortunately, this isn't something the program can fix automatically")
+			print("The program will close in 5 seconds.")
+			sleep(5)
+			quit()
+		case 401:
+			clearTitle("Access Token Expired?")
+			log.logEvent("Get_Api_information/Case401", response.json() )
+			log.logEvent("Get_Api_Information/Case401", "Calling Token Refresher")
+			match response.json()['error']['message']:
+				case "The access token expired":
+					log.logEvent("MatchAPIinfo/Refresh Reason", "Token Expiration")
+				case "Invalid access token":
+					log.logEvent("MatchAPIinfo/Refresh Reason", "The token was invalid")
+				case _:
+					log.logEvent("MatchAPIinfo/Refresh Reason", "Unknown")
+			try:
+				tokenrefresher()
+				access_token = conf_vars['access_token']
+			except: 
+				log.logEvent("GET_API_INFORMATION LN306", "Refresh Failed, Stopping")
+				quit(401)
+			access_token = conf_vars['access_token']
+			main()
+
+		case "timestamp 0":
+			log.logEvent("MatchAPIinfo", "Timestamp Invalid")
+			main()
+		case "no id":
+			clearTitle("No JSON_RESP ID")
+			print("JSON_RESP ID Error")
+			print(json_resp)
+			print("Retrying in 5 seconds.")
+			sleep(5)
+			main()
+		case "Other API Error":
+			clearTitle("Unknown API Error")
+			print("Unknown API error encountered.\nRetrying in 5 seconds.")
+			sleep(5)
+			main()
+		case "other json_resp error":
+			clearTitle("Other JSON_RESP Error")
+			print("There was an unknown error with the JSON Response.")
+			print("Retrying in 5 seconds.")
+			sleep(5)
+			main()
+		case "currently_playing_type error":
+			clearTitle("Error")
+			print("The currently playing type ID was invalid.")
+			print("Retrying in 5 seconds.")
+			sleep(5)
+			main()
 
 def get_api_information(access_token):
+	log = eventlogger()
 	try:
 		response = requests.get(
 		conf_vars['api_link'],
@@ -177,166 +282,62 @@ def get_api_information(access_token):
 			"Authorization": f"Bearer {conf_vars['access_token']}"},
 		timeout=10)
 	except requests.ReadTimeout:
-		os.system('cls')
-		if conf_vars['silenterrors'].lower() == "false":
-			os.system('cls')
-			os.system("title TIMEOUT")
-			print("Spotify's API failed to reply within 10 seconds.")
-			print("Retrying in 5 seconds.")
+		clearTitle("Read Timeout")
+		print("Spotify's API failed to reply within 10 seconds.")
+		print("Retrying in 5 seconds.")
+		log.logEvent("API Info: Read Timeout", "None")
 		sleep(5)
-		get_api_information(access_token)
+		main()
 	except requests.ConnectTimeout:
-		os.system('cls')
-		os.system("title Connection Error")
+		log.logEvent("Connection Timeout", "None")
+		clearTitle("Connection Timeout")
 		print("A connection-related request error has occured.")
 		print("Retrying in 5 seconds.")
 		print("Tip: Make sure your Wi-Fi/Ethernet is connected, with internet access.")
 		sleep(5)
-		get_api_information(access_token)
+		main()
 	except requests.ConnectionError:
-		os.system('cls')
-		os.system("title Connection Error")
+		clearTitle("Connection Error")
 		print("A connection-related request error has occured.")
 		print("Retrying in 5 seconds.")
 		print("Tip: Make sure your Wi-Fi/Ethernet is connected, with internet access.")
 		sleep(5)
-		get_api_information(access_token)
+		main()
+	except RecursionError:
+		log.logEvent("Recursion Error", "Right under all the except requests catchers")
+		quit()
 	except:
-		os.system('cls')
-		os.system("title Unknown Error")
-		print("We've encountered an error that we don't have a fix for.")
-		try:
-			print(f"The API Response code was: {response.status_code}")
-			print("Write that down, and implement it into the program.")
-		except:
-			print("The API Response code was unable to be retrieved.")
-		print("Retrying in 5 seconds.")
-		try:
-			get_api_information(access_token)
-		except RecursionError:
-			os.system('cls')
-			os.system("title Recursion Max Depth Reached.")
-			print("You've run the program so long that you've hit a recursion error")
-			print("Re-Launch the program to fix this issue.")
-			quit()
-		except:
-			os.system('cls')
-			os.system('title critical STOP')
-			print(f"Check Call Stack in Debugging mode for more details.\nQuitting Program")
-	match response.status_code:
-			case 204:
-				while response.status_code == 204:
-					os.system("cls")
-					os.system("title Nothing Playing")
-					print("There is currently no music playing.\n")
-					print("SpotiPy Current Song Info.")
-					print(f"Ver {conf_vars['version_no']}")
-					print("Waiting for music to play...")
-					try:
-						response = requests.get(
-						conf_vars['api_link'],
-						headers={
-							"Authorization": f"Bearer {conf_vars['access_token']}"},
-						timeout=10)
-						sleep(1)
-					except requests.ReadTimeout:
-						os.system('cls')
-						os.system('title Debug//Nothing Playing')
-						print("timeout exceeded nothing returned")
-						sleep(10)
-			case 403:  
-				os.system('cls')
-				os.system('title Uncommon Error')
-				print("For some reason, we're forbidden from getting API information")
-				print("Check the API link in config.ini")
-				print("MAKE SURE: The market on your api link matches your reigon. ex: US=ES")
-				print("MAKE SURE: User is authorized in spotify developer portal")
-				print("It should be linked to spotify's API under the \'player\' category")
-				print("Unfortunately, this isn't something the program can fix automatically")
-				print("The program will close in 5 seconds.")
-				sleep(5)
-				quit()
-			case 401:
-				os.system('cls')
-				os.system('title Token Expired')
-				os.system("title Refreshing Token...")
-				os.system("cls")
-				tokenrefresher()
-				access_token = conf_vars['access_token']
-				get_api_information(access_token)
-			case 200:
-				pass
-			case _:
-				os.system('cls')
-				os.system('title API Response code error')
-				print(f"Given API Response code:{response.status_code}")
-				sleep(10)
-
-#	try:
-#		if response.status_code == 204:
-#			pass
-#	except:
-#		get_api_information(access_token)
-	
-	global json_resp
+		return "Other API Error"
+		
+	if response.status_code != 200:
+		return response.status_code
+			
+	#global json_resp
 	json_resp = response.json()
 
-
-	errorfinder()
-	match json_resp["currently_playing_type"]:
-		case "ad":
-			os.system("cls")
-			os.system("title Advertisement")
-			print("Advertisement")
-			print("Upgrade to Spotify Premium to remove advertisements.")
-			print("SCSI will be back shortly.")
-			print(f"\nSpotiPy Current Song Info v{conf_vars['version_no']}")
-			sleep(1)
-			get_api_information(access_token)
-		case "podcast":
-			os.system("cls")
-			os.system("title Podcast")
-			print("We do not support podcasts.")
-			print("Play a song, and we'll get things rolling")
-			sleep(5)
-			get_api_information(access_token)
-		case "episode":
-			os.system("cls")
-			os.system("title Podcast")
-			print("We do not support podcasts.")
-			print("Play a song, and we'll get things rolling")
-			sleep(5)
-			get_api_information(access_token)
-	if json_resp['timestamp'] == "0":
-		print("timestamp error (should never be seen)")
-		sleep(1123)
+	try:
+		if json_resp['currently_playing_type'] != "track":
+			return json_resp['currently_playing_type']
+	except:
+		return "currently playing type error"
+	#errorfinder()
+	if json_resp['timestamp'] == "0" or 0:
+		return "timestamp 0"
 	try:
 		if json_resp['item']['id'] == None:
-			os.system('cls')
-			os.system("title JSON Response Error")
-			print("JSON_RESP Error")
-			print(json_resp)
-			print("Retrying in 5 seconds.")
-			sleep(15)
-			get_api_information(access_token)
+			return "no id"
 	except:
-		os.system('cls')
-		os.system('title JSON Response Error')
-		print("JSON_RESP Error")
-		print("This can be caused by Spotify's new DJ feature.")
-		print("Retrying in 5 seconds.")
-		sleep(5)
-		get_api_information(access_token)
-	if json_resp['timestamp'] == "0":
-		print("timestamp error (should never be seen)")
-		sleep(1123)
+		if json_resp['context']['uri'] == "spotify:playlist:37i9dQZF1EYkqdzj48dyYq":
+			return "dj playing"
+		else:
+			return "other json_resp error"
 	
 	track_id = json_resp['item']['id']
 	track_name = json_resp['item']['name']
 	artists = [artist for artist in json_resp['item']['artists']]
 	album = json_resp['item']['album']['name']
 	link = json_resp['item']['external_urls']['spotify']
-	if conf_vars['progresstype'] == "Remainder": progress = "-" + str(datetime.fromtimestamp((json_resp['item']['duration_ms']/1000) - (json_resp['progress_ms']/1000)).strftime('%M:%S'))
+	if conf_vars['progresstype'].capitalize() == "Remainder": progress = "-" + str(datetime.fromtimestamp((json_resp['item']['duration_ms']/1000) - (json_resp['progress_ms']/1000)).strftime('%M:%S'))
 	else: progress = str(datetime.fromtimestamp(json_resp['progress_ms'] / 1000).strftime('%M:%S'))
 	duration = str(datetime.fromtimestamp(json_resp['item']['duration_ms'] / 1000).strftime('%M:%S'))
 	playing = json_resp['is_playing']
@@ -350,6 +351,7 @@ def get_api_information(access_token):
 	devtype = json_resp['device']['type']
 	devid = json_resp['device']['id']
 	releaseDatePrecision = json_resp['item']['album']['release_date_precision']
+	trackNum = json_resp['item']['track_number']
 
 	current_api_info = {
 		"id": track_id,
@@ -369,6 +371,7 @@ def get_api_information(access_token):
 		"devtype": devtype,
 		"devid": devid,
 		"release_precision": releaseDatePrecision,
+		"track_no": trackNum,
 	}
 
 	return current_api_info
@@ -401,27 +404,12 @@ if conf_vars['eastereggs'].lower() == "true":
 						os.system("shutdown -s /t 00")
 					except KeyboardInterrupt:
 						print("ABORTED SHUTDOWN")
-						print("Play a new song to prevent loop")
+						print("Play a new song to prevent loop.")
 						print("Returning to normal in 10 seconds...")
 						sleep(10)
-def mainSimple():
-	global current_api_info
-	current_api_info = get_api_information(access_token)
-	if current_api_info['explicit']:
-		os.system(f'title \"{current_api_info["track_name"]}\"[Explicit]')
-	else:
-		os.system(f'title \"{current_api_info["track_name"]}\"')
-	os.system("cls")
-	print("Artist(s): " + current_api_info['artists'])
-	print("Song: " + current_api_info['track_name'])
-	if current_api_info['albumtype'] != "album": 
-		print("Album: " + current_api_info['album'] + ' [' + current_api_info['albumtype'].capitalize() + ']')
-	else:
-		print("Album: " + current_api_info['album'])
-	if conf_vars['progresstype'] == "Remainder": print("Duration: " + current_api_info['duration'] + " / " + current_api_info['progress'])
-	if conf_vars['progresstype'] != "Remainder": print("Duration: " + current_api_info['progress'] + " / " + current_api_info['duration'])
-	sleep(int(conf_vars['sleeptime']))
+
 def lamemusic():
+	global conf_vars
 	devid = current_api_info['devid']
 	queueURL = "https://api.spotify.com/v1/me/player/queue?uri="
 	skipURL = "https://api.spotify.com/v1/me/player/next"
@@ -446,8 +434,7 @@ def lamemusic():
 				timeout=10)
 
 	except:
-		os.system("cls")
-		os.system("title Error whilst correcting your TERRIBLE music taste")
+		clearTitle("Couldn't correct music taste.")
 		print("Couldn't execute API calls for changing music.")
 		print("Easter Eggs disabled for the rest of this session.")
 		print("Continuing in 5 seconds.")
@@ -455,19 +442,21 @@ def lamemusic():
 		conf_vars['eastereggs'] = "false"
 
 def main():
+	global current_api_info
+	global last_track_id
+	global eligibility
+	log = eventlogger()
 	try:
-		global current_api_info
-		global last_track_id
-		global eligibility
 		try:
 			current_api_info = get_api_information(access_token)
+			errorfinder()
 		except:
 			os.system("cls")
 			os.system("title Error")
 			print("There was an error while trying to get API Information.")
 			print("Attempting to resume in 3 seconds.")
 			sleep(3)
-			current_api_info = get_api_information(access_token)
+			main() 
 		if conf_vars['eastereggs'].lower() == "true":
 			try:
 				if "Yameii Online" in current_api_info['artists']:
@@ -534,7 +523,7 @@ def main():
 		print(f"Artist(s): {current_api_info['artists']}")
 		print(f"Song: {current_api_info['track_name']}")
 
-		if current_api_info['albumtype'] == "album": print(f"Album: {current_api_info['album']}")
+		if current_api_info['albumtype'] == "album": print(f"Album: {current_api_info['album']} | Track {current_api_info['track_no']}")
 		if current_api_info['albumtype'] != "album": print(f"Album: {current_api_info['album']} [{current_api_info['albumtype'].capitalize()}]")
 		
 		if conf_vars['progresstype'] == "Remainder": print(f"Duration: {current_api_info['duration']} / {current_api_info['progress']}")
@@ -549,7 +538,7 @@ def main():
 		if conf_vars['tracklink'] == "True": print(f"Play it Here: {current_api_info['link']}")
 		
 		print("TrackID: " + current_track_id) 
-		print(f"Last Song Change: {datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime('%m-%d-%Y @ %H:%M:%S')}")
+		print(f"Last Song Change: {datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime('%m-%d-%Y @ %X')}")
 		
 		
 		#do not touch this please
@@ -557,72 +546,53 @@ def main():
 	except KeyboardInterrupt:
 		try:
 			os.system('cls')
-			os.system("title Program Stopped.")
-			print("CTRL + C Pressed, Program Paused.")
+			os.system(f"title Paused - SpotiPy Current Song Info v{conf_vars['version_no']}")
+			log.logEvent("Main: CTRL+C", "Program Paused.")
 			print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
-			print("Press CTRL + C to resume function")
+			print("Press CTRL + C to Resume.")
 			while True:
 				time.sleep(10000)
 		except KeyboardInterrupt:
 			try:
+				log.logEvent("Main: CTRL+C", "Resuming Function.")
 				os.system('cls')
 				os.system("title Resuming...")
 				print("Resuming program in 5 seconds.")
 				sleep(5)
 			except KeyboardInterrupt:
+				log.logEvent("Main: CTRL+C", "Program Terminated.")
 				os.system("cls")
 				print("SCSI Stopped")
 				print("Reason: KeyboardInterrupt")
 				print(f"SCSI v{conf_vars['version_no']}")
 				exit("-----Program Terminated-----")
+	except:
+		clearTitle("Error")
+		print("Error encountered while running main()")
+		log.logEvent("Main/Highest level except", "Correcting")
+		main()
 
 
 
 cursor.hide()
-
+log.logEvent("Highest Level: Cursor", "Cursor Hidden")
 #migrated all ACCESS_TOKEN to lowercase
 
 #it is needed
-last_track_id = None
+
 
 if conf_vars['logging'] == "True":
 	print("Logging Enabled")
-	starttimestamp = str(datetime.fromtimestamp(datetime.now().timestamp()).strftime("%m-%d-%Y, %H-%M-%S"))
-	songlog = open("logs/" + starttimestamp + ".txt", "w+")
-	songlog.write("SONG LOG FOR SESSION | " + starttimestamp)
-	songlog.close()
+	
+def for_uhh_ever():
+	main()
 
 if __name__ == '__main__': 
 	lines = 12
-	match conf_vars['mode']:
-		case "simple":
-			os.system("mode con cols=70 lines=5")
-			while True:
-				mainSimple()
+	if conf_vars['tracklink'] == "False": os.system(f"mode con cols=70 lines={str(lines)}")
+	else: 
+		lines += 1
+		os.system(f"mode con cols=70 lines={lines}")
+	while True:
+		for_uhh_ever()
 
-		case "default":
-			if conf_vars['tracklink'] == "False": os.system(f"mode con cols=70 lines={str(lines)}")
-			else: 
-				lines += 1
-				os.system(f"mode con cols=70 lines={lines}")
-			while True:
-				main()
-		case _:
-			if conf_vars['tracklink'] == "False": os.system(f"mode con cols=70 lines={str(lines)}")
-			else: os.system(f"mode con cols=70 lines={lines}")
-			while True:
-				main()
-def consolespecs():
-	lines = 12
-	match conf_vars['mode'].lower():
-		case "simple":
-			lines = 5
-		case "default":
-			if conf_vars['tracklink'].lower() == "true":
-				lines += 1
-		case _:
-			lines = 13
-	match conf_vars['date_check'].lower():
-		case "true":
-			lines += 1
-	os.system(f"mode con cols=70 lines={lines}")

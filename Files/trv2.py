@@ -1,6 +1,7 @@
 import configparser, spotipy, os
 from configparser import ConfigParser
 from spotipy.oauth2 import SpotifyOAuth
+import time
 import pyperclip
 config_object = ConfigParser()
 config_object.read("config.ini")
@@ -17,10 +18,18 @@ def create_spotify_oauth():
 try:
     sp_oauth = create_spotify_oauth()
     new_token = sp_oauth.refresh_access_token(conf_vars['refresh_token'])
+    old_token = conf_vars['access_token'][:10]
     conf_vars['access_token'] = new_token['access_token']
     conf_vars['refresh_token'] = new_token['refresh_token']
     with open('config.ini', 'w') as conf:
         config_object.write(conf)
+    if old_token == conf_vars['access_token']:
+        print("Token Refresh Unsuccessful. Old and new tokens are identical.")
+        print(0/0)
+    print(f"Old Token: {old_token}...")
+    print(f"New Token: {conf_vars['access_token'][:10]}...")
+    print("Refresh Successful.")
+    time.sleep(5)
 except:
     os.system("cls")
     from time import sleep
@@ -35,5 +44,4 @@ except:
             config_object.write(conf)
     except:
         print(0/0)
-
        
