@@ -10,60 +10,39 @@
 
 from distutils.command.config import config
 from re import A
-import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrowser
+import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrowser, subprocess
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 from datetime import datetime
 from time import sleep
-from configparser import ConfigParser
 from tkinter import W
+
 global conf_vars
-global json_resp, last_track_id, access_token, title, current_api_info, response, lines, starttimestamp
-global char
-
-starttimestamp = str(datetime.fromtimestamp(datetime.now().timestamp()).strftime("%m-%d-%Y, %H-%M-%S"))
-songlog = open("logs/" + starttimestamp + ".txt", "w+")
-songlog.write("SONG LOG FOR SESSION | " + starttimestamp)
-songlog.close()
+global json_resp, last_track_id, access_token, title, current_api_info, response, lines, starttimestamp, char, songlog, diaglog, log
 
 
-#place BADASS OOP stuff here
-class eventlogger():
-	def __init__(self):
-		pass
-	def logEvent(self, event, adtl_details):
-		self.event = event
+#vvvvvv OOP Imports HERE vvvvvv
+from logfuncs import logFileCreator as createLog
+from logfuncs import LogFunc
+from confighandler import ConfigHandler
 
-		self.details = adtl_details
-		logg = open('logs/' + starttimestamp + ".txt", "a")
-		logg.write(f"\nRecorded Event @ {datetime.now().strftime('%H:%M:%S')}")
-		logg.write(f"\n{self.event}")
-		logg.write(f"\nAdditional Details: {self.details}\n")
-		logg.close()
-class songlogger():
-	def __init__(self, name, artist, id):
-		self.name = name
-		self.artist = artist
-		self.id = id
-	def saveInfo(self):
-		print("To Be Saved:")
-		songlog = open('logs/' + starttimestamp + ".txt", "a")
-		songlog.write("\n-----------------------------------\n")
-		songlog.write("Track: " + self.name +'\n')
-		songlog.write("Artist: " + self.artist +'\n')
-		songlog.write("id: " + self.id +'\n')
-		songlog.write("-----------------------------------")
-		songlog.close()
+#Call Classes here
+cvfunc = ConfigHandler()
+conf_vars = cvfunc.GetConfig()
+access_token = conf_vars['access_token']
+
+temp = createLog()
+diaglog = temp.createLog('diagnostic')
+if conf_vars['logging'].capitalize() == "True":
+	songlog = temp.createLog("song")
+
+log = LogFunc()
+
 #vars
 last_track_id = None
-config_object = ConfigParser()
-config_object.read("config.ini")
-conf_vars = config_object["CONFVARS"]
-access_token = conf_vars['access_token']
 title = ""
 char = ""
 eligibility = ""
-log = eventlogger()
 
 #dictionaries
 forbidden_dict = {
@@ -75,6 +54,7 @@ forbidden_dict = {
 	"|": 'title.replace("|","[VBar]")',
 	"&": 'title.replace("&","and")',
 }
+valid_401_messages = ["The access token expired", "Invalid access token"]
 
 if conf_vars['eastereggs'].lower() == "true":
 	easter_dict = {
@@ -99,43 +79,32 @@ if conf_vars['eastereggs'].lower() == "true":
 #Place functions here
 
 def tokenrefresher():
-	log = eventlogger()
-	log.logEvent("Token Refresher Started", "wait for refresh status...")
+	log.SaveDiagInfo("Token Refresher Started", "wait for refresh status...", diaglog)
 	global access_token
 	global conf_vars
 	try:
-		import trv2
-		trv2		
-		config_object = ConfigParser()
-		config_object.read("config.ini")
-		conf_vars = config_object["CONFVARS"]
+		from trv2 import TokenRefresherV2
+		ntkn = TokenRefresherV2()
+		ntkn.RefreshToken()
+		conf_vars = cvfunc.GetConfig()
 		access_token = conf_vars['access_token']
-		with open('config.ini', 'w') as conf:
-			config_object.write(conf)
-		log.logEvent("Token Refresher: Success", "No exceptions thrown | TRV2")
 	except:
-		log.logEvent("Token Refresher: Unsuccessful", "Reverting to Backup flask method.")
+		log.SaveDiagInfo("Token Refresher: Unsuccessful", "Reverting to Backup flask method.", diaglog)
 		keyboard = Controller()
 		timeout_s = 3  # how many seconds to wait 
 		try:
 			webbrowser.open("http://localhost:5000")
 			p = subprocess.run("flask run", timeout=timeout_s)
-			log.logEvent("Token Refresh: Web Browser", "Web Browser opened, subprocess running...")
+			log.SaveDiagInfo("Token Refresh: Web Browser", "Web Browser opened, subprocess running...", diaglog)
 		except subprocess.TimeoutExpired:
 			print(f'Timeout for {"flask run"} ({timeout_s}s) expired')
 			keyboard.press(Key.ctrl)
 			keyboard.press(W)
 			keyboard.release(Key.ctrl)
 			keyboard.release(W)
-			log.logEvent("Token Refresher: Complete", "Process Complete. (Backup method)")
-	config_object = ConfigParser()
-	config_object.read("config.ini")
-	conf_vars = config_object["CONFVARS"]
-	access_token = conf_vars['access_token']
-	with open('config.ini', 'w') as conf:
-		config_object.write(conf)
+			log.SaveDiagInfo("Token Refresher: Complete", "Process Complete. (Backup method)", diaglog)
 	
-	os.system("cls")
+	clearTitle("Token Refresh Completed.")
 
 def clearTitle(title):
 	os.system('cls')
@@ -158,63 +127,42 @@ def consolespecs():
 
 def errorfinder():
 	global access_token
-	log = eventlogger()
-	try:
-		if json_resp['timestamp'] == 0:
-			log.logEvent("Error Finder: Timestamp 0", "Timestamp ignored, re-acquiring info")
-			main()
-	except:
-		clearTitle("Error")
-		print("We've encountered an error.")
-		log.logEvent("Error Finder: API Response", f"Code= {json_resp['error']['status']}, API Info: {json_resp['error']['message']}")
-		print(f"The Error code we recieved is: {json_resp['error']['status']}")
-		print(f"Additional information: {json_resp['error']['message']}")
-		match json_resp['error']['status']:
-			case 429:
-				if int(conf_vars['sleeptime']) > 5:
-					log.logEvent("Error Finder: 429/Rate Limit", "Program Halted, Sleeptime excessive.")
-					clearTitle("Rate Limit Stop")
-					print("Repeated API Rate limit errors, please refresh your token, and try again later.")
-					quit()
-				slt = int(conf_vars['sleeptime']) + 1
-				conf_vars['sleeptime'] = str(slt)
-				log.logEvent("Error Finder: 429/Sleeptime", "Sleeptime Increased.")
-				with open('config.ini', 'w') as conf:
-					config_object.write(conf)
-			case 401:
-				tokenrefresher()
-				access_token = conf_vars['access_token']
-				log.logEvent("Function401", "Refreshed (Line 185)")
-
-def errorfinder():
-	global access_token
+	global conf_vars 
 	match current_api_info:
 		case 204:
 			clearTitle("Idle - SpotiPy Current Song Info")
-			print("There is currently no music playing.\n")
-			print("SpotiPy Current Song Info")
+			print("There is currently no music playing.\nSpotiPy Current Song Info")
 			print(f"Ver {conf_vars['version_no']}")
-			if conf_vars['deep_idle'].capitalize() == "True": print("Deep Idle Enabled. API Requests limited to once every 30 seconds.")
+			if conf_vars['deep_idle'].capitalize() == "True": 
+				print("Deep Idle Enabled. API Requests limited to once every 30 seconds.")
+				timeout2 = 30
+			else:
+				timeout2 = 5
 			print("Waiting for music to play.")
-			if conf_vars['deep_idle'].upper() == "TRUE": timeout2 = 30 
-			else: timeout2 = 5
 			sleep(timeout2)
+			main()
 		case 429:
 			if int(conf_vars['sleeptime']) > 5:
-				log.logEvent("MatchAPIinfo", "Program stopping, Sleeptime too much.")
+				log.SaveDiagInfo("MatchAPIinfo", "Program stopping, Sleeptime too much.", diaglog)
 				clearTitle("Rate Limit Stop")
 				print("Repeated API Rate limit errors, please refresh your token, and try again later.")
 				quit()
-			slt = int(conf_vars['sleeptime']) + 1 
-			conf_vars['sleeptime'] = str(slt)
-			log.logEvent("MatchAPIinfo: Rate Limit", "Sleeptime Increased.")
-			with open('config.ini', 'w') as conf:
-				config_object.write(conf)
+			conf_vars['sleeptime'] += 1
 			sleep(5)
-		case 401:
-			tokenrefresher()
+		case "The access token expired":
+			clearTitle("Access Token Expired")
+			if json_resp['error']['message'] in valid_401_messages:
+				print("Reason Check Passed, Moving Forward with refresh.")
+				tokenrefresher()
+			else:
+				print("The Error Message was not found in the valid messages list")
+				try:
+					print(f"the message was: {json_resp['error']['message']}")
+				except:
+					print("The error message doesn't exist.")
 			access_token = conf_vars['access_token']
-			log.logEvent("Function401", "Refreshed (Line 185)")
+			log.SaveDiagInfo("Function401", "Refreshed (Line 185)", diaglog)
+			main()
 		case 403:
 			print("For some reason, we're forbidden from getting API information")
 			print("Check the API link in config.ini")
@@ -226,27 +174,21 @@ def errorfinder():
 			sleep(5)
 			quit()
 		case 401:
-			clearTitle("Access Token Expired?")
-			log.logEvent("Get_Api_information/Case401", response.json() )
-			log.logEvent("Get_Api_Information/Case401", "Calling Token Refresher")
-			match response.json()['error']['message']:
-				case "The access token expired":
-					log.logEvent("MatchAPIinfo/Refresh Reason", "Token Expiration")
-				case "Invalid access token":
-					log.logEvent("MatchAPIinfo/Refresh Reason", "The token was invalid")
-				case _:
-					log.logEvent("MatchAPIinfo/Refresh Reason", "Unknown")
+			clearTitle("Access Token Expired.")
+			print("Token Expiration Validated.")
+			tokenrefresher()
+			log.SaveDiagInfo("Errorfinder/401", "Refreshing Token", diaglog)
 			try:
 				tokenrefresher()
 				access_token = conf_vars['access_token']
 			except: 
-				log.logEvent("GET_API_INFORMATION LN306", "Refresh Failed, Stopping")
+				log.SaveDiagInfo("GET_API_INFORMATION LN306", "Refresh Failed, Stopping", diaglog)
 				quit(401)
 			access_token = conf_vars['access_token']
 			main()
 
 		case "timestamp 0":
-			log.logEvent("MatchAPIinfo", "Timestamp Invalid")
+			log.SaveDiagInfo("MatchAPIinfo", "Timestamp Invalid", diaglog)
 			main()
 		case "no id":
 			clearTitle("No JSON_RESP ID")
@@ -274,7 +216,7 @@ def errorfinder():
 			main()
 
 def get_api_information(access_token):
-	log = eventlogger()
+	global response
 	try:
 		response = requests.get(
 		conf_vars['api_link'],
@@ -285,11 +227,11 @@ def get_api_information(access_token):
 		clearTitle("Read Timeout")
 		print("Spotify's API failed to reply within 10 seconds.")
 		print("Retrying in 5 seconds.")
-		log.logEvent("API Info: Read Timeout", "None")
+		log.SaveDiagInfo("API Info: Read Timeout", "None", diaglog)
 		sleep(5)
 		main()
 	except requests.ConnectTimeout:
-		log.logEvent("Connection Timeout", "None")
+		log.SaveDiagInfo("Connection Timeout", "None", diaglog)
 		clearTitle("Connection Timeout")
 		print("A connection-related request error has occured.")
 		print("Retrying in 5 seconds.")
@@ -304,13 +246,26 @@ def get_api_information(access_token):
 		sleep(5)
 		main()
 	except RecursionError:
-		log.logEvent("Recursion Error", "Right under all the except requests catchers")
+		log.SaveDiagInfo("Recursion Error", "Right under all the except requests catchers", diaglog)
 		quit()
 	except:
 		return "Other API Error"
-		
+	if response.status_code == 401:
+		if response.json()['error']['message'] in valid_401_messages:
+			tokenrefresher()
+			return 401
+		else:
+			log.SaveDiagInfo("get_api_information/401 message", response.json['error']['message'], diaglog)	
+			quit()
+	if response.status_code == 204:
+		return 204
 	if response.status_code != 200:
-		return response.status_code
+		try:
+			log.SaveDiagInfo("get_api_information", response.json(), diaglog)
+		except:
+			log.SaveDiagInfo("get_api_information", "json response dump failed.", diaglog)
+		return response.status_code()
+		
 			
 	#global json_resp
 	json_resp = response.json()
@@ -385,18 +340,13 @@ if conf_vars['eastereggs'].lower() == "true":
 			match current_api_info['id']:
 				case "4cOdK2wGLETKBW3PvgPWqT":
 					if conf_vars['logging'] == "True":
-						saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
-						saveinfo.saveInfo()
+						log.SaveSongInfo(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'], diaglog)
 					os.system("shutdown -r /t 00")
 				case "6LNoArVBBVZzUTUiAX2aKO":
 					if conf_vars['logging'] == "True":
-						songlog = open('logs/' + starttimestamp + ".txt", "a")
-						saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
-						saveinfo.saveInfo()
-						songlog.close()
+						log.SaveSongInfo(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'], diaglog)
 					try:
-						os.system("cls")
-						os.system('title ------- SHUTDOWN IMMINENT -------')
+						clearTitle("---Kanye West Shutdown---")
 						print("Stop shutdown by pressing CTRL + C in the next 10 seconds.")
 						print("If the shutdown isn't aborted in that time, computer will shutdown.")
 						print(f"SCSI v{conf_vars['version_no']}")
@@ -445,16 +395,22 @@ def main():
 	global current_api_info
 	global last_track_id
 	global eligibility
-	log = eventlogger()
 	try:
 		try:
 			current_api_info = get_api_information(access_token)
 			errorfinder()
 		except:
-			os.system("cls")
-			os.system("title Error")
+			clearTitle("Error")
 			print("There was an error while trying to get API Information.")
+			print("Main() Failed to execute properly. (get_api_information & errorfinder)")
 			print("Attempting to resume in 3 seconds.")
+			try:
+				if current_api_info == 401 or "401":
+					tokenrefresher()
+				else:
+					print(current_api_info)
+			except:
+				print("no api information returned.")
 			sleep(3)
 			main() 
 		if conf_vars['eastereggs'].lower() == "true":
@@ -474,8 +430,7 @@ def main():
 
 		if conf_vars['logging'] == "True":
 			if current_track_id != last_track_id:
-				saveinfo = songlogger(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'])
-				saveinfo.saveInfo()
+				log.SaveSongInfo(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'], songlog)
 		last_track_id = current_track_id
 		title = f" by {str(current_api_info['artists'])}"
 		for char in forbidden_dict:
@@ -547,35 +502,73 @@ def main():
 		try:
 			os.system('cls')
 			os.system(f"title Paused - SpotiPy Current Song Info v{conf_vars['version_no']}")
-			log.logEvent("Main: CTRL+C", "Program Paused.")
-			print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
+			log.SaveDiagInfo("Main: CTRL+C", "Program Paused.", diaglog)
+			try:
+				print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
+			except:
+				print("Last Song: -----\nAlbum: -----")
 			print("Press CTRL + C to Resume.")
 			while True:
 				time.sleep(10000)
 		except KeyboardInterrupt:
 			try:
-				log.logEvent("Main: CTRL+C", "Resuming Function.")
+				log.SaveDiagInfo("Main: CTRL+C", "Resuming Function.", diaglog)
 				os.system('cls')
 				os.system("title Resuming...")
 				print("Resuming program in 5 seconds.")
 				sleep(5)
 			except KeyboardInterrupt:
-				log.logEvent("Main: CTRL+C", "Program Terminated.")
+				log.SaveDiagInfo("Main: CTRL+C", "Program Terminated.", diaglog)
 				os.system("cls")
 				print("SCSI Stopped")
 				print("Reason: KeyboardInterrupt")
 				print(f"SCSI v{conf_vars['version_no']}")
 				exit("-----Program Terminated-----")
 	except:
-		clearTitle("Error")
-		print("Error encountered while running main()")
-		log.logEvent("Main/Highest level except", "Correcting")
-		main()
-
+		try:
+			clearTitle("Error")
+			print("Error encountered while running main")
+			print("Dumping info to log")
+			print("Continuing in 3 seconds")
+			sleep(3)
+			if response.status_code == 401:
+				tokenrefresher()
+			else:
+				log.SaveDiagInfo("Main/Top Level", "Token was not 401 errored", diaglog)
+			log.SaveDiagInfo("Main/Top Level", "Dumping info to log...", diaglog)
+			try:
+				log.SaveDiagInfo("Main/Top Level",response, diaglog)
+			except:
+				log.SaveDiagInfo("Main/Top Level", "Dumping 'response' failed.", diaglog)
+			try:
+				log.SaveDiagInfo("Main/Top Level",access_token, diaglog)
+			except:
+				log.SaveDiagInfo("Main/Top Level", "Dumping 'access_token' failed.", diaglog)
+			try:
+				log.SaveDiagInfo("Main/Top Level",current_api_info, diaglog)
+			except:
+				log.SaveDiagInfo("Main/Top Level", "Dumping 'current_api_info' failed.", diaglog)
+			try:
+				log.SaveDiagInfo("Main/Top Level",response.json(), diaglog)
+			except:
+				log.SaveDiagInfo("Main/Top Level", "Dumping 'response.json()' failed.", diaglog)
+		except KeyboardInterrupt:
+			print("Paused Program for debugging purposes.")
+			print(conf_vars['access_token'])
+			try:
+				print(response.json)
+			except:
+				try:
+					print(json_resp)
+				except:
+					print("No JSON Response.")
+			print(current_api_info)
+			quit()
+	#sleep(3)
 
 
 cursor.hide()
-log.logEvent("Highest Level: Cursor", "Cursor Hidden")
+log.SaveDiagInfo("Base Program: Cursor", "Cursor Hidden", diaglog)
 #migrated all ACCESS_TOKEN to lowercase
 
 #it is needed
