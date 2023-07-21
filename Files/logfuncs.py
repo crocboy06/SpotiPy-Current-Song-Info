@@ -19,8 +19,7 @@ class LogFunc():
 		self.details = adtl_details
 		self.LogName = LogName
 		logg = open('logs/diagnostics/' + self.LogName + ".txt", "a")
-		logg.write(f"\nRecorded Event @ {datetime.now().strftime('%H:%M:%S')}")
-		logg.write(f"\n{self.event}")
+		logg.write(f"\nEvent @ {datetime.now().strftime('%H:%M:%S')} | {self.event}")
 		logg.write(f"\nAdditional Details: {self.details}\n")
 		logg.close()
 

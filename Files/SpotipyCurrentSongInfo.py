@@ -5,7 +5,6 @@
 #Stuff getting removed soon
 #---------------------START GRAVEYARD---------------------
 
-
 #---------------------END GRAVEYARD---------------------
 
 from distutils.command.config import config
@@ -79,15 +78,19 @@ if conf_vars['eastereggs'].lower() == "true":
 #Place functions here
 
 def tokenrefresher():
-	log.SaveDiagInfo("Token Refresher Started", "wait for refresh status...", diaglog)
+	global response
+	response = None
+	log.SaveDiagInfo("Token Refresher Started", "Awaiting status", diaglog)
 	global access_token
 	global conf_vars
 	try:
+		log.SaveDiagInfo("Token Refresher: Pre-Refresh Check", conf_vars['access_token'][:10], diaglog)
 		from trv2 import TokenRefresherV2
-		ntkn = TokenRefresherV2()
-		ntkn.RefreshToken()
+		tmp = TokenRefresherV2()
+		token = tmp.RefreshToken()
 		conf_vars = cvfunc.GetConfig()
 		access_token = conf_vars['access_token']
+		log.SaveDiagInfo("Token Refresher: Post-Refresh Check", conf_vars['access_token'][:10], diaglog)
 	except:
 		log.SaveDiagInfo("Token Refresher: Unsuccessful", "Reverting to Backup flask method.", diaglog)
 		keyboard = Controller()
@@ -105,6 +108,7 @@ def tokenrefresher():
 			log.SaveDiagInfo("Token Refresher: Complete", "Process Complete. (Backup method)", diaglog)
 	
 	clearTitle("Token Refresh Completed.")
+	get_api_information(access_token)
 
 def clearTitle(title):
 	os.system('cls')
@@ -126,6 +130,7 @@ def consolespecs():
 	os.system(f"mode con cols=70 lines={lines}")
 
 def errorfinder():
+	global current_api_info
 	global access_token
 	global conf_vars 
 	match current_api_info:
@@ -140,7 +145,7 @@ def errorfinder():
 				timeout2 = 5
 			print("Waiting for music to play.")
 			sleep(timeout2)
-			main()
+			get_api_information(access_token)
 		case 429:
 			if int(conf_vars['sleeptime']) > 5:
 				log.SaveDiagInfo("MatchAPIinfo", "Program stopping, Sleeptime too much.", diaglog)
@@ -149,20 +154,6 @@ def errorfinder():
 				quit()
 			conf_vars['sleeptime'] += 1
 			sleep(5)
-		case "The access token expired":
-			clearTitle("Access Token Expired")
-			if json_resp['error']['message'] in valid_401_messages:
-				print("Reason Check Passed, Moving Forward with refresh.")
-				tokenrefresher()
-			else:
-				print("The Error Message was not found in the valid messages list")
-				try:
-					print(f"the message was: {json_resp['error']['message']}")
-				except:
-					print("The error message doesn't exist.")
-			access_token = conf_vars['access_token']
-			log.SaveDiagInfo("Function401", "Refreshed (Line 185)", diaglog)
-			main()
 		case 403:
 			print("For some reason, we're forbidden from getting API information")
 			print("Check the API link in config.ini")
@@ -175,8 +166,9 @@ def errorfinder():
 			quit()
 		case 401:
 			clearTitle("Access Token Expired.")
-			print("Token Expiration Validated.")
-			tokenrefresher()
+			print("Token Refresh Initiated from Errorfinder - 401 Error")
+			print(f"DEBUG:{current_api_info}")
+			sleep(1)
 			log.SaveDiagInfo("Errorfinder/401", "Refreshing Token", diaglog)
 			try:
 				tokenrefresher()
@@ -185,8 +177,6 @@ def errorfinder():
 				log.SaveDiagInfo("GET_API_INFORMATION LN306", "Refresh Failed, Stopping", diaglog)
 				quit(401)
 			access_token = conf_vars['access_token']
-			main()
-
 		case "timestamp 0":
 			log.SaveDiagInfo("MatchAPIinfo", "Timestamp Invalid", diaglog)
 			main()
@@ -199,7 +189,9 @@ def errorfinder():
 			main()
 		case "Other API Error":
 			clearTitle("Unknown API Error")
-			print("Unknown API error encountered.\nRetrying in 5 seconds.")
+			print("Unknown API error encountered.")
+			print("Debug: Issue with the request; requests module uncaught exception")
+			print("Continuing in 5 seconds.")
 			sleep(5)
 			main()
 		case "other json_resp error":
@@ -208,11 +200,32 @@ def errorfinder():
 			print("Retrying in 5 seconds.")
 			sleep(5)
 			main()
-		case "currently_playing_type error":
-			clearTitle("Error")
-			print("The currently playing type ID was invalid.")
+		case "cpt error":
+			clearTitle("Error - Currently Playing Type")
+			print("The currently playing type key was invalid.")
 			print("Retrying in 5 seconds.")
 			sleep(5)
+			main()
+		case "The access token expired":
+			clearTitle("Access Token Expired")
+			if json_resp['error']['message'] in valid_401_messages:
+				print("Reason Check Passed, Moving Forward with refresh.")
+				log.SaveDiagInfo("Errorfinder-RefreshAudit.Reason", json_resp['error']['message'] ,diaglog)
+				tokenrefresher()
+			else:
+				print("The Error Message was not found in the valid messages list")
+				try:
+					print(f"the message was: {json_resp['error']['message']}")
+					log.SaveDiagInfo("Errorfinder-RefreshAudit.Reason;Invalid message", json_resp['error']['message'], diaglog)
+				except:
+					print("The error message doesn't exist.")
+			access_token = conf_vars['access_token']
+			main()
+		case "spotifydj":
+			clearTitle("The Spotify DJ is cooking...")
+			print("Let's see what the spotify DJ has in store for you today.")
+			print("Program will continue when X is done talking.")
+			time.sleep(5)
 			main()
 
 def get_api_information(access_token):
@@ -221,15 +234,16 @@ def get_api_information(access_token):
 		response = requests.get(
 		conf_vars['api_link'],
 		headers={
-			"Authorization": f"Bearer {conf_vars['access_token']}"},
+			"Authorization": f"Bearer {access_token}"},
 		timeout=10)
 	except requests.ReadTimeout:
-		clearTitle("Read Timeout")
-		print("Spotify's API failed to reply within 10 seconds.")
-		print("Retrying in 5 seconds.")
 		log.SaveDiagInfo("API Info: Read Timeout", "None", diaglog)
+		clearTitle("Read Timeout")
+		print("We didn't recieve a response from Spotify.")
+		print("There's nothing you can do, just sit tight.")
+		print("Retrying in 5 seconds.")
 		sleep(5)
-		main()
+		get_api_information(access_token)
 	except requests.ConnectTimeout:
 		log.SaveDiagInfo("Connection Timeout", "None", diaglog)
 		clearTitle("Connection Timeout")
@@ -237,22 +251,24 @@ def get_api_information(access_token):
 		print("Retrying in 5 seconds.")
 		print("Tip: Make sure your Wi-Fi/Ethernet is connected, with internet access.")
 		sleep(5)
-		main()
+		get_api_information(access_token)
 	except requests.ConnectionError:
+		log.SaveDiagInfo("Connection Error", "None", diaglog)
 		clearTitle("Connection Error")
 		print("A connection-related request error has occured.")
 		print("Retrying in 5 seconds.")
 		print("Tip: Make sure your Wi-Fi/Ethernet is connected, with internet access.")
 		sleep(5)
-		main()
+		get_api_information(access_token)
 	except RecursionError:
-		log.SaveDiagInfo("Recursion Error", "Right under all the except requests catchers", diaglog)
+		log.SaveDiagInfo("Get-API-Information", "Except: Recursion Error", diaglog)
 		quit()
+	except KeyboardInterrupt:
+		print("API Request Force-Stopped with KeyboardInterrupt.")
 	except:
 		return "Other API Error"
 	if response.status_code == 401:
 		if response.json()['error']['message'] in valid_401_messages:
-			tokenrefresher()
 			return 401
 		else:
 			log.SaveDiagInfo("get_api_information/401 message", response.json['error']['message'], diaglog)	
@@ -267,26 +283,34 @@ def get_api_information(access_token):
 		return response.status_code()
 		
 			
-	#global json_resp
 	json_resp = response.json()
-
+	
+	try:
+		if json_resp['context']['uri'] == "spotify:playlist:37i9dQZF1EYkqdzj48dyYq":
+			if json_resp['item'] == None:
+				return "spotifydj"
+	except:
+		pass #If the context is null, removing this would cause an error. (Nonetype not subscriptable)
 	try:
 		if json_resp['currently_playing_type'] != "track":
 			return json_resp['currently_playing_type']
 	except:
-		return "currently playing type error"
-	#errorfinder()
+		return "cpt error"
+
 	if json_resp['timestamp'] == "0" or 0:
 		return "timestamp 0"
 	try:
 		if json_resp['item']['id'] == None:
 			return "no id"
 	except:
-		if json_resp['context']['uri'] == "spotify:playlist:37i9dQZF1EYkqdzj48dyYq":
-			return "dj playing"
-		else:
-			return "other json_resp error"
+		return "other json_resp error"
 	
+	eligibility_year = int(json_resp['item']['album']['release_date'].split("-")[0])
+	if 2000 <= eligibility_year < 2020:
+		eligibility = "Yes"
+	else:
+		eligibility = "No"
+
 	track_id = json_resp['item']['id']
 	track_name = json_resp['item']['name']
 	artists = [artist for artist in json_resp['item']['artists']]
@@ -327,6 +351,7 @@ def get_api_information(access_token):
 		"devid": devid,
 		"release_precision": releaseDatePrecision,
 		"track_no": trackNum,
+		"eligibility": eligibility,
 	}
 
 	return current_api_info
@@ -395,38 +420,25 @@ def main():
 	global current_api_info
 	global last_track_id
 	global eligibility
+	global access_token
 	try:
 		try:
 			current_api_info = get_api_information(access_token)
-			errorfinder()
-		except:
-			clearTitle("Error")
-			print("There was an error while trying to get API Information.")
-			print("Main() Failed to execute properly. (get_api_information & errorfinder)")
-			print("Attempting to resume in 3 seconds.")
 			try:
-				if current_api_info == 401 or "401":
-					tokenrefresher()
-				else:
-					print(current_api_info)
+				errorfinder()
 			except:
-				print("no api information returned.")
-			sleep(3)
-			main() 
+				clearTitle("Errorfinder failed to run.")
+				log.SaveDiagInfo("ErrorFinder/Failed", response.json, diaglog)
+		except:
+			clearTitle("getApiInformation failed to run.")
+			log.SaveDiagInfo("main/get_api_information-Failed", "Failed to run correctly. (Run the function outside of any exception catchers.)", diaglog)
 		if conf_vars['eastereggs'].lower() == "true":
 			try:
 				if "Yameii Online" in current_api_info['artists']:
 					lamemusic()
 			except:
-				print("Check for artist failed.")
+				return None
 		current_track_id = current_api_info['id']
-		if current_track_id != last_track_id:
-			if conf_vars['clipboard'] == "True": pyperclip.copy(current_api_info['track_name'] + " by " + current_api_info['artists'] + " | " +current_api_info['album'])
-			eligibility_year = int(current_api_info['release_date'].split("-")[0])
-			if 2000 <= eligibility_year < 2020:
-				eligibility = "Yes"
-			else:
-				eligibility = "No"
 
 		if conf_vars['logging'] == "True":
 			if current_track_id != last_track_id:
@@ -487,8 +499,8 @@ def main():
 		if current_api_info['explicit']: print("Explicit: Yes")
 		if not current_api_info['explicit']: print("Explicit: No")
 		
-		if current_api_info['release_precision'] != "day": print(f"Released: {current_api_info['release_date']} (Imprecise) | Eligible: {eligibility}")
-		if current_api_info['release_precision'] == "day": print(f"Released: {current_api_info['release_date']} | Eligible: {eligibility}")
+		if current_api_info['release_precision'] != "day": print(f"Released: {current_api_info['release_date']} (Imprecise) | Eligible: {current_api_info['eligibility']}")
+		if current_api_info['release_precision'] == "day": print(f"Released: {current_api_info['release_date']} | Eligible: {current_api_info['eligibility']}")
 		
 		if conf_vars['tracklink'] == "True": print(f"Play it Here: {current_api_info['link']}")
 		
@@ -524,47 +536,10 @@ def main():
 				print("Reason: KeyboardInterrupt")
 				print(f"SCSI v{conf_vars['version_no']}")
 				exit("-----Program Terminated-----")
-	except:
-		try:
-			clearTitle("Error")
-			print("Error encountered while running main")
-			print("Dumping info to log")
-			print("Continuing in 3 seconds")
-			sleep(3)
-			if response.status_code == 401:
-				tokenrefresher()
-			else:
-				log.SaveDiagInfo("Main/Top Level", "Token was not 401 errored", diaglog)
-			log.SaveDiagInfo("Main/Top Level", "Dumping info to log...", diaglog)
-			try:
-				log.SaveDiagInfo("Main/Top Level",response, diaglog)
-			except:
-				log.SaveDiagInfo("Main/Top Level", "Dumping 'response' failed.", diaglog)
-			try:
-				log.SaveDiagInfo("Main/Top Level",access_token, diaglog)
-			except:
-				log.SaveDiagInfo("Main/Top Level", "Dumping 'access_token' failed.", diaglog)
-			try:
-				log.SaveDiagInfo("Main/Top Level",current_api_info, diaglog)
-			except:
-				log.SaveDiagInfo("Main/Top Level", "Dumping 'current_api_info' failed.", diaglog)
-			try:
-				log.SaveDiagInfo("Main/Top Level",response.json(), diaglog)
-			except:
-				log.SaveDiagInfo("Main/Top Level", "Dumping 'response.json()' failed.", diaglog)
-		except KeyboardInterrupt:
-			print("Paused Program for debugging purposes.")
-			print(conf_vars['access_token'])
-			try:
-				print(response.json)
-			except:
-				try:
-					print(json_resp)
-				except:
-					print("No JSON Response.")
-			print(current_api_info)
-			quit()
-	#sleep(3)
+
+
+
+
 
 
 cursor.hide()
@@ -573,13 +548,6 @@ log.SaveDiagInfo("Base Program: Cursor", "Cursor Hidden", diaglog)
 
 #it is needed
 
-
-if conf_vars['logging'] == "True":
-	print("Logging Enabled")
-	
-def for_uhh_ever():
-	main()
-
 if __name__ == '__main__': 
 	lines = 12
 	if conf_vars['tracklink'] == "False": os.system(f"mode con cols=70 lines={str(lines)}")
@@ -587,5 +555,5 @@ if __name__ == '__main__':
 		lines += 1
 		os.system(f"mode con cols=70 lines={lines}")
 	while True:
-		for_uhh_ever()
+		main()
 

@@ -18,7 +18,6 @@ class TokenRefresherV2():
                         redirect_uri="http://localhost:5000/redirect",
                         scope="user-read-currently-playing",
                         )
-            os.system('cls')
             sp_oauth = create_spotify_oauth()
             new_token = sp_oauth.refresh_access_token(conf_vars['refresh_token'])
             old_token = conf_vars['access_token'][:10]
@@ -34,8 +33,6 @@ class TokenRefresherV2():
             print("Refresh Successful.\nContinuing in a moment.")
             time.sleep(5)
             os.system('cls')
+            return conf_vars['access_token']
         except:
             return print(0/0)
-
-balls = TokenRefresherV2()
-balls.RefreshToken()
