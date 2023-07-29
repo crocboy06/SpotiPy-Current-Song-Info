@@ -9,7 +9,7 @@
 
 from distutils.command.config import config
 from re import A
-import cursor, json, requests, time, os, subprocess, pyperclip, pynput, webbrowser, subprocess
+import cursor, json, requests, time, os, subprocess, pynput, webbrowser, subprocess
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 from datetime import datetime
@@ -77,6 +77,34 @@ if conf_vars['eastereggs'].lower() == "true":
 
 #Place functions here
 
+def programPauser():
+	try:
+		os.system('cls')
+		os.system(f"title Paused - SpotiPy Current Song Info v{conf_vars['version_no']}")
+		log.SaveDiagInfo("ProgramPauser", "Program Paused.", diaglog)
+		try:
+			print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
+		except:
+			print("Last Song: -----\nAlbum: -----")
+		print("Press CTRL + C to Resume.")
+		while True:
+			time.sleep(10000)
+	except KeyboardInterrupt:
+		try:
+			log.SaveDiagInfo("ProgramPauser", "Resuming Program.", diaglog)
+			os.system('cls')
+			os.system("title Resuming...")
+			print("Resuming program in 5 seconds.")
+			sleep(5)
+		except KeyboardInterrupt:
+			log.SaveDiagInfo("ProgramPauser", "Program Stopped", diaglog)
+			os.system("cls")
+			print("SCSI Stopped")
+			print("Reason: Stopped from ProgramPauser")
+			print(f"SCSI v{conf_vars['version_no']}")
+			exit("-----Program Terminated-----")
+
+
 def tokenrefresher():
 	global response
 	response = None
@@ -138,11 +166,11 @@ def errorfinder():
 			clearTitle("Idle - SpotiPy Current Song Info")
 			print("There is currently no music playing.\nSpotiPy Current Song Info")
 			print(f"Ver {conf_vars['version_no']}")
+			timeout2 = 5
 			if conf_vars['deep_idle'].capitalize() == "True": 
 				print("Deep Idle Enabled. API Requests limited to once every 30 seconds.")
 				timeout2 = 30
-			else:
-				timeout2 = 5
+				
 			print("Waiting for music to play.")
 			sleep(timeout2)
 			get_api_information(access_token)
@@ -264,7 +292,8 @@ def get_api_information(access_token):
 		log.SaveDiagInfo("Get-API-Information", "Except: Recursion Error", diaglog)
 		quit()
 	except KeyboardInterrupt:
-		print("API Request Force-Stopped with KeyboardInterrupt.")
+		log.SaveDiagInfo("Get-Api-Information - Force Stop", "KeyboardInterrupt", diaglog)
+		programPauser()
 	except:
 		return "Other API Error"
 	if response.status_code == 401:
@@ -428,7 +457,7 @@ def main():
 				errorfinder()
 			except:
 				clearTitle("Errorfinder failed to run.")
-				log.SaveDiagInfo("ErrorFinder/Failed", response.json, diaglog)
+				log.SaveDiagInfo("Main/ErrorFinder - Failed", response.json, diaglog)
 		except:
 			clearTitle("getApiInformation failed to run.")
 			log.SaveDiagInfo("main/get_api_information-Failed", "Failed to run correctly. (Run the function outside of any exception catchers.)", diaglog)
@@ -453,90 +482,55 @@ def main():
 			title = f'\"{current_api_info["track_name"]}\" [Explicit]{title}'
 		else:
 			title = f'\"{current_api_info["track_name"]}\"{title}'
-		
+
 		os.system("title " + title)
-
 		if conf_vars['eastereggs'].lower() == "true": eastereggs()
-
+		
 		os.system("cls")
 		
 		print("♪ Now Playing ♪".center(70))
 		
-		match current_api_info['devtype']:
-			case "Smartphone":
-				try:
-					print(f"Pb Device: {current_api_info['devicename']} (Smartphone) | {current_api_info['volume']}% Volume")
-				except:
-					print(f"Pb Device: Unavailable | Volume: Unavailable")
-			case "Computer":
-				try:
-					print(f"Pb Device: {current_api_info['devicename']} (Computer) | {current_api_info['volume']}% Volume")
-				except:
-					print(f"Pb Device: Unavailable | Volume: Unavailable")
-			case "Tablet":
-				try:
-					print(f"Pb Device: {current_api_info['devicename']} (Tablet) | {current_api_info['volume']}% Volume")
-				except:
-					print(f"Pb Device: Unavailable | Volume: Unavailable")
-			case "Unknown":
-				try:
-					print(f"Pb Device: {current_api_info['devicename']} (Unknown) | {current_api_info['volume']}% Volume")
-				except:
-					print(f"Pb Device: Unavailable | Volume: Unavailable")
+		try:
+			print(f"Pb Device: {current_api_info['devicename']} ({current_api_info['devtype'].capitalize()}) | {current_api_info['volume']}% Volume")
+		except:
+			print(f"Pb Device: Unavailable | Volume: Unavailable")
 
 		if current_api_info['playing']: print("Pb Status: Playing") 
-		if not current_api_info['playing']: print("Pb Status: Paused")
+		else: print("Pb Status: Paused")
 		
 		print(f"Artist(s): {current_api_info['artists']}")
 		print(f"Song: {current_api_info['track_name']}")
 
 		if current_api_info['albumtype'] == "album": print(f"Album: {current_api_info['album']} | Track {current_api_info['track_no']}")
-		if current_api_info['albumtype'] != "album": print(f"Album: {current_api_info['album']} [{current_api_info['albumtype'].capitalize()}]")
+		else: print(f"Album: {current_api_info['album']} [{current_api_info['albumtype'].capitalize()}]")
 		
-		if conf_vars['progresstype'] == "Remainder": print(f"Duration: {current_api_info['duration']} / {current_api_info['progress']}")
-		if conf_vars['progresstype'] != "Remainder": print(f"Duration: {current_api_info['progress']} / {current_api_info['duration']}")
-	
+		if conf_vars['progresstype'].capitalize() == "Remainder": print(f"Duration: {current_api_info['duration']} / {current_api_info['progress']}")
+		else: print(f"Duration: {current_api_info['progress']} / {current_api_info['duration']}")
+		
 		if current_api_info['explicit']: print("Explicit: Yes")
-		if not current_api_info['explicit']: print("Explicit: No")
+		else: print("Explicit: No")
 		
-		if current_api_info['release_precision'] != "day": print(f"Released: {current_api_info['release_date']} (Imprecise) | Eligible: {current_api_info['eligibility']}")
-		if current_api_info['release_precision'] == "day": print(f"Released: {current_api_info['release_date']} | Eligible: {current_api_info['eligibility']}")
+		if current_api_info['release_precision'] == "day":
+			if conf_vars['date_check'].capitalize == "True": 
+				print(f"Released: {current_api_info['release_date']} | Eligible: {current_api_info['eligibility']}")
+			else:
+				print(f"Released: {current_api_info['release_date']}")
+		else:
+			if conf_vars["date_check"].capitalize() == "True":
+				print(f"Released: {current_api_info['release_date']} (Imprecise) | Eligible: {current_api_info['eligibility']}")
+			else:
+				print(f"Released: {current_api_info['release_date']} (Imprecise)")
 		
 		if conf_vars['tracklink'] == "True": print(f"Play it Here: {current_api_info['link']}")
 		
-		print("TrackID: " + current_track_id) 
-		print(f"Last Song Change: {datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime('%m-%d-%Y @ %X')}")
+		print("Track ID: " + current_track_id) 
 		
-		
+		print(f"Playback Modified At: {datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime('%m-%d-%Y @ %X')}")
+
 		#do not touch this please
 		sleep(int(conf_vars['sleeptime']))
 	except KeyboardInterrupt:
-		try:
-			os.system('cls')
-			os.system(f"title Paused - SpotiPy Current Song Info v{conf_vars['version_no']}")
-			log.SaveDiagInfo("Main: CTRL+C", "Program Paused.", diaglog)
-			try:
-				print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
-			except:
-				print("Last Song: -----\nAlbum: -----")
-			print("Press CTRL + C to Resume.")
-			while True:
-				time.sleep(10000)
-		except KeyboardInterrupt:
-			try:
-				log.SaveDiagInfo("Main: CTRL+C", "Resuming Function.", diaglog)
-				os.system('cls')
-				os.system("title Resuming...")
-				print("Resuming program in 5 seconds.")
-				sleep(5)
-			except KeyboardInterrupt:
-				log.SaveDiagInfo("Main: CTRL+C", "Program Terminated.", diaglog)
-				os.system("cls")
-				print("SCSI Stopped")
-				print("Reason: KeyboardInterrupt")
-				print(f"SCSI v{conf_vars['version_no']}")
-				exit("-----Program Terminated-----")
-
+		programPauser()
 
 
 

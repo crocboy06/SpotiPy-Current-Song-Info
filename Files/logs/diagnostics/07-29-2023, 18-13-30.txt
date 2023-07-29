@@ -1,0 +1,15 @@
+Diagnostics for 07-29-2023, 18-13-30
+Event @ 18:13:30 | Base Program: Cursor
+Additional Details: Cursor Hidden
+
+Event @ 18:13:31 | Errorfinder/401
+Additional Details: Refreshing Token
+
+Event @ 18:13:31 | Token Refresher Started
+Additional Details: Awaiting status
+
+Event @ 18:13:31 | Token Refresher: Pre-Refresh Check
+Additional Details: BQBMsGjJaL
+
+Event @ 18:13:36 | Token Refresher: Post-Refresh Check
+Additional Details: BQA7V2Qbrd
