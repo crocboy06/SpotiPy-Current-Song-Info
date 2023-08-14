@@ -28,12 +28,13 @@ class logFileCreator():
 		pass
 	def createLog(self, LogType):
 		from datetime import datetime
+		import platform
 		self.LogType = LogType
 		logName = str(datetime.fromtimestamp(datetime.now().timestamp()).strftime('%m-%d-%Y, %H-%M-%S'))
 		match self.LogType:
 			case "diagnostic":
 				creator = open(f"logs/diagnostics/{logName}.txt", "w+")
-				creator.write(f"Diagnostics for {logName}")
+				creator.write(f"Diagnostics for {logName}, Python Ver. {platform.python_version()}")
 			case "song":
 				creator = open(f"logs/songlogs/{logName}.txt", "w+")
 				creator.write(f"Song Log for {logName}")

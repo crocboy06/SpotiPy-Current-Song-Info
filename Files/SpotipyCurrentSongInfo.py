@@ -45,14 +45,15 @@ eligibility = ""
 
 #dictionaries
 forbidden_dict = {
-	"(": 'title.replace("(","[OpPr]")',
-	")": 'title.replace(")","[ClPr]")',
+	"(": 'title.replace("(","[")',
+	")": 'title.replace(")","]")',
 	"<": 'title.replace("<","[LsThn]")',
 	">": 'title.replace(">","[GrThn]")',
 	"^": 'title.replace("^","Pwr")',
 	"|": 'title.replace("|","[VBar]")',
 	"&": 'title.replace("&","and")',
 }
+
 valid_401_messages = ["The access token expired", "Invalid access token"]
 
 if conf_vars['eastereggs'].lower() == "true":
@@ -66,21 +67,20 @@ if conf_vars['eastereggs'].lower() == "true":
 	"7MXcmkmyxEYAJf04cbqKoI": 'os.system("""title \"Glow Like Dat\" [Explicit] by Rich Chigga""")',
 	"49X0LAl6faAusYq02PRAY6": 'os.system("""title \"Lady - Hear Me Tonight\" by Modjo [Non Stop Pop FM]""")',
 	"7h8j5w0ywpI7AC2IQvdWqT": 'os.system("title Nextel Chirps and Boost Mobiles")',
-	"6o0IPNoi3PZi9tkoyVGXSB": 'os.system("title IM DA BIGGEST BURD IM DA BIGGEST BURD")',
 	"2iJuuzV8P9Yz0VSurttIV5": 'os.system("title iam+ PHOTO SOCIAL")',
 	"4Li2WHPkuyCdtmokzW2007": 'os.system("title Remind me, Who was in Paris?")',
 	"373gDROnujxNTFa1FojYIl": 'os.system("title Numb (Pt. 2) by Linkin Park")',
 	"4UoDSs5VAw6xHdzbkjocTM": 'os.system("title THEY SAY THEY WANNA READ MY MIND 🔊🔊🔊")',
 	"3QzAOrNlsabgbMwlZt7TAY": 'os.system("title Axel in Harlem by Animan Studios")',
 	"6E1YebXpPPtujMUljDNlOo": 'os.system("title Audi RS6 300km/h")',
+	"2TsD9kSbgYx5fSNRsoNURE": 'os.system("title Kevin Gates carried this song.")',
 	}
 
 #Place functions here
 
 def programPauser():
 	try:
-		os.system('cls')
-		os.system(f"title Paused - SpotiPy Current Song Info v{conf_vars['version_no']}")
+		clearTitle(f"title Paused - SpotiPy Current Song Info v{conf_vars['version_no']}")
 		log.SaveDiagInfo("ProgramPauser", "Program Paused.", diaglog)
 		try:
 			print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
@@ -95,6 +95,7 @@ def programPauser():
 			os.system('cls')
 			os.system("title Resuming...")
 			print("Resuming program in 5 seconds.")
+			print("Press CTRL + C again to close the program.")
 			sleep(5)
 		except KeyboardInterrupt:
 			log.SaveDiagInfo("ProgramPauser", "Program Stopped", diaglog)
@@ -134,8 +135,6 @@ def tokenrefresher():
 			keyboard.release(Key.ctrl)
 			keyboard.release(W)
 			log.SaveDiagInfo("Token Refresher: Complete", "Process Complete. (Backup method)", diaglog)
-	
-	clearTitle("Token Refresh Completed.")
 	get_api_information(access_token)
 
 def clearTitle(title):
@@ -183,6 +182,7 @@ def errorfinder():
 			conf_vars['sleeptime'] += 1
 			sleep(5)
 		case 403:
+			log.SaveDiagInfo("Errorfinder", "403 Forbidden, Closing program.", diaglog)
 			print("For some reason, we're forbidden from getting API information")
 			print("Check the API link in config.ini")
 			print("It should be linked to spotify's API under the \'player\' category")
@@ -418,8 +418,8 @@ def lamemusic():
 	queueURL = "https://api.spotify.com/v1/me/player/queue?uri="
 	skipURL = "https://api.spotify.com/v1/me/player/next"
 	track = "spotify:track:55WLWX71YkHt2tSucNIf1g"
-	postUrl = queueURL + track.replace(":", "%3A") + "&deviceid=" + devid
-	loopPostURL = "https://api.spotify.com/v1/me/player/repeat?state=track" + "&device_id=" + devid
+	postUrl = queueURL + track.replace(":", "%3A") + f"&deviceid={devid}"
+	loopPostURL = "https://api.spotify.com/v1/me/player/repeat?state=track" + f"&deviceid={devid}"
 	try:
 		response = requests.post(
 			postUrl,
@@ -537,10 +537,7 @@ def main():
 
 
 cursor.hide()
-log.SaveDiagInfo("Base Program: Cursor", "Cursor Hidden", diaglog)
-#migrated all ACCESS_TOKEN to lowercase
-
-#it is needed
+log.SaveDiagInfo("Main: Cursor", "Cursor Hidden", diaglog)
 
 if __name__ == '__main__': 
 	lines = 12
