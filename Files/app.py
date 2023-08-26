@@ -32,13 +32,19 @@ def skip():
 @app.route('/runitback')
 def replay():
     global token_info
-    SPOTIFY_RIB_URL = "https://api.spotify.com/v1/me/player/seek?position_ms=0"
+    SPOTIFY_RIB_URL = "https://api.spotify.com/v1/me/player/seek?position_ms=1"
     response = requests.put(
 		SPOTIFY_RIB_URL,
 		headers={
 			"Authorization": f"Bearer {token_info['access_token']}"
 		})
-    return redirect('/currentlyPlaying')
+    match int(response.status_code):
+        case 302:
+            return f"Unable to skip, Skip URL has been changed.\nAddl. Details: {response.json()}"
+        case 200:
+            pass
+    return redirect ('/currentlyPlaying')
+
 
 @app.route('/refreshtoken')
 def refreshtoken():

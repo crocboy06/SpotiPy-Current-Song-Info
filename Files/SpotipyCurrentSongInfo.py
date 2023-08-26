@@ -80,7 +80,7 @@ if conf_vars['eastereggs'].lower() == "true":
 
 def programPauser():
 	try:
-		clearTitle(f"title Paused - SpotiPy Current Song Info v{conf_vars['version_no']}")
+		clearTitle(f"Paused - SpotiPy Current Song Info v{conf_vars['version_no']}")
 		log.SaveDiagInfo("ProgramPauser", "Program Paused.", diaglog)
 		try:
 			print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
@@ -202,7 +202,7 @@ def errorfinder():
 				tokenrefresher()
 				access_token = conf_vars['access_token']
 			except: 
-				log.SaveDiagInfo("GET_API_INFORMATION LN306", "Refresh Failed, Stopping", diaglog)
+				log.SaveDiagInfo("ErrorFinder/401", "Refresh Failed, Stopping", diaglog)
 				quit(401)
 			access_token = conf_vars['access_token']
 		case "timestamp 0":
@@ -255,6 +255,12 @@ def errorfinder():
 			print("Program will continue when X is done talking.")
 			time.sleep(5)
 			main()
+		case "episode":
+			clearTitle("You are playing a Podcast or Video.")
+			print("We do not support podcasts or videos.")
+			print("Once you play a song, We'll get things rolling.")
+			sleep(10)
+			log.SaveDiagInfo("Errorfinder-MatchCase-PlayingType=episode", "Podcast or Video Detected.", diaglog)
 
 def get_api_information(access_token):
 	global response
@@ -498,11 +504,22 @@ def main():
 		if current_api_info['playing']: print("Pb Status: Playing") 
 		else: print("Pb Status: Paused")
 		
-		print(f"Artist(s): {current_api_info['artists']}")
-		print(f"Song: {current_api_info['track_name']}")
+		if len(current_api_info['artists']) > 50: print(f"Artist(s):{current_api_info['artists'][:50]}...")
+		else: print(f"Artist(s): {current_api_info['artists']}")
+		
+		if len(current_api_info['track_name']) > 50:
+			print(f"Song: {current_api_info['track_name'][:50]}...")
+		else:
+			print(f"Song: {current_api_info['track_name']}")
 
-		if current_api_info['albumtype'] == "album": print(f"Album: {current_api_info['album']} | Track {current_api_info['track_no']}")
-		else: print(f"Album: {current_api_info['album']} [{current_api_info['albumtype'].capitalize()}]")
+		if current_api_info['albumtype'] == "album": 
+			if len(current_api_info['album']) > 50:
+				print(f"Album: {current_api_info['album'][:50]}... | Track {current_api_info['track_no']}")
+			else: print(f"Album: {current_api_info['album']} | Track {current_api_info['track_no']}") 
+		if current_api_info['albumtype'] != "album":
+			if len(current_api_info['album']) > 50:
+				print(f"Album: {current_api_info['album'][:50]}... [{current_api_info['albumtype'].capitalize()}]")
+			else: print(f"Album: {current_api_info['album']} [{current_api_info['albumtype'].capitalize()}]") 
 		
 		if conf_vars['progresstype'].capitalize() == "Remainder": print(f"Duration: {current_api_info['duration']} / {current_api_info['progress']}")
 		else: print(f"Duration: {current_api_info['progress']} / {current_api_info['duration']}")
@@ -538,7 +555,6 @@ def main():
 
 cursor.hide()
 log.SaveDiagInfo("Main: Cursor", "Cursor Hidden", diaglog)
-
 if __name__ == '__main__': 
 	lines = 12
 	if conf_vars['tracklink'] == "False": os.system(f"mode con cols=70 lines={str(lines)}")
