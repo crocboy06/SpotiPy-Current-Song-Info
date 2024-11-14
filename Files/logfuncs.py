@@ -40,3 +40,13 @@ class logFileCreator():
 				creator.write(f"Song Log for {logName}")
 		creator.close()
 		return logName
+	
+#debug
+if __name__ == "__main__":
+	a = input("Create Log? Y/N")
+	if a == "Y":
+		b = logFileCreator()
+		c = b.createLog("diagnostic")
+		d = b.createLog("song")
+		print(f"Diagnostic Log created. Name: {c}")
+		print(f"Song Log created. Name: {d}")

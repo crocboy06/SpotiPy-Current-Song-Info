@@ -9,15 +9,16 @@
 
 from distutils.command.config import config
 from re import A
-import cursor, json, requests, time, os, subprocess, pynput, webbrowser, subprocess
+import cursor, json, requests, time, os, subprocess, pynput, webbrowser, subprocess, platform
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 from datetime import datetime
 from time import sleep
 from tkinter import W
+from exceptions import *
 
 global conf_vars
-global json_resp, last_track_id, access_token, title, current_api_info, response, lines, starttimestamp, char, songlog, diaglog, log
+global json_resp, last_track_id, access_token, title, current_api_info, response, lines, starttimestamp, char, songlog, diaglog, log, toBePaused
 
 
 #vvvvvv OOP Imports HERE vvvvvv
@@ -38,10 +39,7 @@ if conf_vars['logging'].capitalize() == "True":
 log = LogFunc()
 
 #vars
-last_track_id = None
-title = ""
-char = ""
-eligibility = ""
+last_track_id, title, char, eligibility, toBePaused, response_valid = None, "", "", "", False, False
 
 #dictionaries
 forbidden_dict = {
@@ -64,7 +62,6 @@ if conf_vars['eastereggs'].lower() == "true":
 	"38PAO1pvj6sAhVKb40dmw7": 'os.system("title LEGALIZE NUCLEAR BOMBS")',
 	"5TRPicyLGbAF2LGBFbHGvO": 'os.system("title HE MADE GRADUATION!!!!")',
 	"2xZIr0k8VNuonD2Xgz1CbP": 'os.system("title Your name is Emakwanem Ibemakanam Ogugua Biosah")',
-	"7MXcmkmyxEYAJf04cbqKoI": 'os.system("""title \"Glow Like Dat\" [Explicit] by Rich Chigga""")',
 	"49X0LAl6faAusYq02PRAY6": 'os.system("""title \"Lady - Hear Me Tonight\" by Modjo [Non Stop Pop FM]""")',
 	"7h8j5w0ywpI7AC2IQvdWqT": 'os.system("title Nextel Chirps and Boost Mobiles")',
 	"2iJuuzV8P9Yz0VSurttIV5": 'os.system("title iam+ PHOTO SOCIAL")',
@@ -74,36 +71,16 @@ if conf_vars['eastereggs'].lower() == "true":
 	"3QzAOrNlsabgbMwlZt7TAY": 'os.system("title Axel in Harlem by Animan Studios")',
 	"6E1YebXpPPtujMUljDNlOo": 'os.system("title Audi RS6 300km/h")',
 	"2TsD9kSbgYx5fSNRsoNURE": 'os.system("title Kevin Gates carried this song.")',
+	"5xEddMQaqVM8W4iJt2KZw2": 'os.system("title ＮＩＮＥ ＯＮＥ 🎸💫 (Jqho8GJ-7JU)")',
+	"4pDZMkTyq5YQNYLIXq0xA0": 'os.system("title GettyImages \ 25 Years")',
+	"7MXcmkmyxEYAJf04cbqKoI": "current_api_info['artists'] = 'Rich Chigga'",
+	"285pBltuF7vW8TeWk8hdRR": 'os.system("title I STILL SEE YOUR SHADOWS IN MY ROOM")',
+	"7m1cNdKABpKy0aAtsKAIGx": 'os.system("title FREE SANTANA BITCH 💯💯💯")',
+	"3ZCczSAiyiT3WZMbeWjuzi": 'os.system("title Kazuo Kawasaki 704 Rimless Frames [Grey, SP-51 Lens])'
 	}
 
 #Place functions here
 
-def programPauser():
-	try:
-		clearTitle(f"Paused - SpotiPy Current Song Info v{conf_vars['version_no']}")
-		log.SaveDiagInfo("ProgramPauser", "Program Paused.", diaglog)
-		try:
-			print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
-		except:
-			print("Last Song: -----\nAlbum: -----")
-		print("Press CTRL + C to Resume.")
-		while True:
-			time.sleep(10000)
-	except KeyboardInterrupt:
-		try:
-			log.SaveDiagInfo("ProgramPauser", "Resuming Program.", diaglog)
-			os.system('cls')
-			os.system("title Resuming...")
-			print("Resuming program in 5 seconds.")
-			print("Press CTRL + C again to close the program.")
-			sleep(5)
-		except KeyboardInterrupt:
-			log.SaveDiagInfo("ProgramPauser", "Program Stopped", diaglog)
-			os.system("cls")
-			print("SCSI Stopped")
-			print("Reason: Stopped from ProgramPauser")
-			print(f"SCSI v{conf_vars['version_no']}")
-			exit("-----Program Terminated-----")
 
 
 def tokenrefresher():
@@ -113,44 +90,37 @@ def tokenrefresher():
 	global access_token
 	global conf_vars
 	try:
-		log.SaveDiagInfo("Token Refresher: Pre-Refresh Check", conf_vars['access_token'][:10], diaglog)
+		log.SaveDiagInfo("Token Refresher: [Pre-Refresh Check]", conf_vars['access_token'][:10], diaglog)
 		from trv2 import TokenRefresherV2
 		tmp = TokenRefresherV2()
 		token = tmp.RefreshToken()
 		conf_vars = cvfunc.GetConfig()
 		access_token = conf_vars['access_token']
-		log.SaveDiagInfo("Token Refresher: Post-Refresh Check", conf_vars['access_token'][:10], diaglog)
+		log.SaveDiagInfo("Token Refresher - [Post-Refresh Check]", conf_vars['access_token'][:10], diaglog)
 	except:
-		log.SaveDiagInfo("Token Refresher: Unsuccessful", "Reverting to Backup flask method.", diaglog)
+		log.SaveDiagInfo("Token Refresher: [Unsuccessful]", "Reverting to Backup flask method.", diaglog)
 		keyboard = Controller()
 		timeout_s = 3  # how many seconds to wait 
 		try:
 			webbrowser.open("http://localhost:5000")
 			p = subprocess.run("flask run", timeout=timeout_s)
-			log.SaveDiagInfo("Token Refresh: Web Browser", "Web Browser opened, subprocess running...", diaglog)
+			log.SaveDiagInfo("Token Refresh: [Web Browser]", "Web Browser opened, subprocess running...", diaglog)
 		except subprocess.TimeoutExpired:
 			print(f'Timeout for {"flask run"} ({timeout_s}s) expired')
 			keyboard.press(Key.ctrl)
 			keyboard.press(W)
 			keyboard.release(Key.ctrl)
 			keyboard.release(W)
-			log.SaveDiagInfo("Token Refresher: Complete", "Process Complete. (Backup method)", diaglog)
-	get_api_information(access_token)
+			log.SaveDiagInfo("Token Refresher: [Complete]", "Process Complete. !!!(Backup method)!!!", diaglog)
+	sleep(1)
+	main()
 
 def clearTitle(title):
 	os.system('cls')
 	os.system(f"title {title}")
 
 def consolespecs():
-	lines = 12
-	match conf_vars['mode'].lower():
-		case "simple":
-			lines = 5
-		case "default":
-			if conf_vars['tracklink'].lower() == "true":
-				lines += 1
-		case _:
-			lines = 13
+	lines = 13
 	match conf_vars['date_check'].lower():
 		case "true":
 			lines += 1
@@ -172,12 +142,13 @@ def errorfinder():
 				
 			print("Waiting for music to play.")
 			sleep(timeout2)
-			get_api_information(access_token)
+			print("\nChecking for song info...")
+			sleep(1)
+			vd = 204
+			return vd
 		case 429:
 			if int(conf_vars['sleeptime']) > 5:
-				log.SaveDiagInfo("MatchAPIinfo", "Program stopping, Sleeptime too much.", diaglog)
-				clearTitle("Rate Limit Stop")
-				print("Repeated API Rate limit errors, please refresh your token, and try again later.")
+				log.SaveDiagInfo("MatchAPIinfo", "Program stopping, Sleeptime too high.", diaglog)
 				quit()
 			conf_vars['sleeptime'] += 1
 			sleep(5)
@@ -186,29 +157,27 @@ def errorfinder():
 			print("For some reason, we're forbidden from getting API information")
 			print("Check the API link in config.ini")
 			print("It should be linked to spotify's API under the \'player\' category")
-			print("MAKE SURE: The market on your api link matches your reigon. ex: US=ES")
-			print("MAKE SURE: User is authorized in spotify developer portal")
+			print("Make sure the market on your api link matches your reigon. ex: US=ES")
+			print("Make sure the user is authorized in spotify developer portal")
 			print("Unfortunately, this isn't something the program can fix automatically")
 			print("The program will close in 5 seconds.")
 			sleep(5)
 			quit()
 		case 401:
 			clearTitle("Access Token Expired.")
-			print("Token Refresh Initiated from Errorfinder - 401 Error")
-			print(f"DEBUG:{current_api_info}")
-			sleep(1)
-			log.SaveDiagInfo("Errorfinder/401", "Refreshing Token", diaglog)
+			log.SaveDiagInfo("Errorfinder [401]", "Refreshing Token", diaglog)
 			try:
 				tokenrefresher()
 				access_token = conf_vars['access_token']
 			except: 
-				log.SaveDiagInfo("ErrorFinder/401", "Refresh Failed, Stopping", diaglog)
+				log.SaveDiagInfo("ErrorFinder [401]", "Refresh Failed, Stopping", diaglog)
 				quit(401)
 			access_token = conf_vars['access_token']
 		case "timestamp 0":
-			log.SaveDiagInfo("MatchAPIinfo", "Timestamp Invalid", diaglog)
+			log.SaveDiagInfo("ErrorFinder [timestamp 0]", "Timestamp Invalid", diaglog)
 			main()
 		case "no id":
+			log.SaveDiagInfo("ErrorFinder [no id]", "No ID present in json_resp", diaglog)
 			clearTitle("No JSON_RESP ID")
 			print("JSON_RESP ID Error")
 			print(json_resp)
@@ -216,6 +185,7 @@ def errorfinder():
 			sleep(5)
 			main()
 		case "Other API Error":
+			log.SaveDiagInfo("ErrorFinder [Other API Error]", f"API Error Encountered. {current_api_info}", diaglog)
 			clearTitle("Unknown API Error")
 			print("Unknown API error encountered.")
 			print("Debug: Issue with the request; requests module uncaught exception")
@@ -223,10 +193,14 @@ def errorfinder():
 			sleep(5)
 			main()
 		case "other json_resp error":
+			log.SaveDiagInfo("ErrorFinder [other json_resp error]", "Unknown problem with json_resp", diaglog)
 			clearTitle("Other JSON_RESP Error")
 			print("There was an unknown error with the JSON Response.")
 			print("Retrying in 5 seconds.")
 			sleep(5)
+			main()
+		case "unknown":
+			log.SaveDiagInfo("Errorfinder-MatchCase-Unknown (CPT/None)", "In-between songs... (Ignoring)", diaglog)
 			main()
 		case "cpt error":
 			clearTitle("Error - Currently Playing Type")
@@ -238,20 +212,20 @@ def errorfinder():
 			clearTitle("Access Token Expired")
 			if json_resp['error']['message'] in valid_401_messages:
 				print("Reason Check Passed, Moving Forward with refresh.")
-				log.SaveDiagInfo("Errorfinder-RefreshAudit.Reason", json_resp['error']['message'] ,diaglog)
+				log.SaveDiagInfo("Errorfinder [The access token expired]", json_resp['error']['message'] ,diaglog)
 				tokenrefresher()
 			else:
-				print("The Error Message was not found in the valid messages list")
+				print("json_resp error message was not found in the valid messages list.")
 				try:
 					print(f"the message was: {json_resp['error']['message']}")
-					log.SaveDiagInfo("Errorfinder-RefreshAudit.Reason;Invalid message", json_resp['error']['message'], diaglog)
+					log.SaveDiagInfo("Errorfinder [The access token expired]", f"The error message recieved was not in the valid list. {json_resp['error']['message']}", diaglog)
 				except:
 					print("The error message doesn't exist.")
 			access_token = conf_vars['access_token']
 			main()
 		case "spotifydj":
 			clearTitle("The Spotify DJ is cooking...")
-			print("Let's see what the spotify DJ has in store for you today.")
+			print("Let's see what the Spotify DJ has in store for you today.")
 			print("Program will continue when X is done talking.")
 			time.sleep(5)
 			main()
@@ -260,10 +234,9 @@ def errorfinder():
 			print("We do not support podcasts or videos.")
 			print("Once you play a song, We'll get things rolling.")
 			sleep(10)
-			log.SaveDiagInfo("Errorfinder-MatchCase-PlayingType=episode", "Podcast or Video Detected.", diaglog)
-
-def get_api_information(access_token):
-	global response
+			log.SaveDiagInfo("Errorfinder [episode]", "Podcast or Video Detected.", diaglog)
+def new_get_player_info(access_token):
+	global response, toBePaused
 	try:
 		response = requests.get(
 		conf_vars['api_link'],
@@ -271,74 +244,56 @@ def get_api_information(access_token):
 			"Authorization": f"Bearer {access_token}"},
 		timeout=10)
 	except requests.ReadTimeout:
-		log.SaveDiagInfo("API Info: Read Timeout", "None", diaglog)
-		clearTitle("Read Timeout")
-		print("We didn't recieve a response from Spotify.")
-		print("There's nothing you can do, just sit tight.")
-		print("Retrying in 5 seconds.")
-		sleep(5)
-		get_api_information(access_token)
+		raise NoReply
 	except requests.ConnectTimeout:
-		log.SaveDiagInfo("Connection Timeout", "None", diaglog)
-		clearTitle("Connection Timeout")
-		print("A connection-related request error has occured.")
-		print("Retrying in 5 seconds.")
-		print("Tip: Make sure your Wi-Fi/Ethernet is connected, with internet access.")
-		sleep(5)
-		get_api_information(access_token)
+		raise ConnectionBad
 	except requests.ConnectionError:
-		log.SaveDiagInfo("Connection Error", "None", diaglog)
-		clearTitle("Connection Error")
-		print("A connection-related request error has occured.")
-		print("Retrying in 5 seconds.")
-		print("Tip: Make sure your Wi-Fi/Ethernet is connected, with internet access.")
-		sleep(5)
-		get_api_information(access_token)
+		raise ConnectionBad
 	except RecursionError:
-		log.SaveDiagInfo("Get-API-Information", "Except: Recursion Error", diaglog)
-		quit()
+		raise RecursionError
 	except KeyboardInterrupt:
-		log.SaveDiagInfo("Get-Api-Information - Force Stop", "KeyboardInterrupt", diaglog)
-		programPauser()
+		raise KeyboardInterrupt
 	except:
-		return "Other API Error"
+		raise OtherAPIError
 	if response.status_code == 401:
-		if response.json()['error']['message'] in valid_401_messages:
-			return 401
-		else:
-			log.SaveDiagInfo("get_api_information/401 message", response.json['error']['message'], diaglog)	
-			quit()
+		raise TokenExpired
 	if response.status_code == 204:
-		return 204
+		raise NoTrack
 	if response.status_code != 200:
 		try:
-			log.SaveDiagInfo("get_api_information", response.json(), diaglog)
+			log.SaveDiagInfo("new_get_player_info", f"Status Code:{response.status_code}", diaglog)
 		except:
-			log.SaveDiagInfo("get_api_information", "json response dump failed.", diaglog)
-		return response.status_code()
-		
-			
+			pass
+		raise ResponseCodeInvalid
+	#code = response.status_code
 	json_resp = response.json()
-	
+	try:
+		if json_resp['transferring_playback'] == True:
+			raise TransferringPlayback
+	except:
+		pass
 	try:
 		if json_resp['context']['uri'] == "spotify:playlist:37i9dQZF1EYkqdzj48dyYq":
 			if json_resp['item'] == None:
-				return "spotifydj"
+				raise DJPlaying
+			if json_resp['currently_playing_type'] != "track":
+				raise DJPlaying
 	except:
 		pass #If the context is null, removing this would cause an error. (Nonetype not subscriptable)
 	try:
 		if json_resp['currently_playing_type'] != "track":
-			return json_resp['currently_playing_type']
+			raise CurrentlyPlayingType
 	except:
-		return "cpt error"
-
-	if json_resp['timestamp'] == "0" or 0:
-		return "timestamp 0"
+		raise CurrentlyPlayingType
+	
+	if json_resp['timestamp'] == 0:
+		raise TimestampInvalid
 	try:
 		if json_resp['item']['id'] == None:
-			return "no id"
+			raise NullID
 	except:
-		return "other json_resp error"
+		log.SaveDiagInfo("New_Get_Player_Info", json_resp, diaglog)
+		raise JsonResponseError
 	
 	eligibility_year = int(json_resp['item']['album']['release_date'].split("-")[0])
 	if 2000 <= eligibility_year < 2020:
@@ -360,12 +315,17 @@ def get_api_information(access_token):
 	artist_names = ', '.join([artist['name'] for artist in artists])
 	device = json_resp['device']['name']
 	volume = json_resp['device']['volume_percent']
-	albumtype = json_resp['item']['album']['album_type']
+	albumtype = json_resp['item']['album']['album_type'].capitalize()
 	clock = json_resp['timestamp']
-	devtype = json_resp['device']['type']
+	devtype = json_resp['device']['type'].capitalize()
 	devid = json_resp['device']['id']
 	releaseDatePrecision = json_resp['item']['album']['release_date_precision']
 	trackNum = json_resp['item']['track_number']
+	try:
+		context = json_resp['context']['uri']
+	except:
+		pass
+	item = json_resp['item']
 
 	current_api_info = {
 		"id": track_id,
@@ -387,10 +347,14 @@ def get_api_information(access_token):
 		"release_precision": releaseDatePrecision,
 		"track_no": trackNum,
 		"eligibility": eligibility,
+		"item": item,
 	}
+	try:
+		current_api_info['context'] = context
+	except:
+		pass
 
 	return current_api_info
-	 
 
 if conf_vars['eastereggs'].lower() == "true":
 	def eastereggs():
@@ -398,10 +362,6 @@ if conf_vars['eastereggs'].lower() == "true":
 			exec(easter_dict.get(current_api_info['id']))
 		else:
 			match current_api_info['id']:
-				case "4cOdK2wGLETKBW3PvgPWqT":
-					if conf_vars['logging'] == "True":
-						log.SaveSongInfo(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'], diaglog)
-					os.system("shutdown -r /t 00")
 				case "6LNoArVBBVZzUTUiAX2aKO":
 					if conf_vars['logging'] == "True":
 						log.SaveSongInfo(current_api_info["track_name"], current_api_info['artists'], current_api_info['id'], diaglog)
@@ -413,66 +373,103 @@ if conf_vars['eastereggs'].lower() == "true":
 						sleep(10)
 						os.system("shutdown -s /t 00")
 					except KeyboardInterrupt:
-						print("ABORTED SHUTDOWN")
-						print("Play a new song to prevent loop.")
-						print("Returning to normal in 10 seconds...")
-						sleep(10)
+						clearTitle("Shutdown Aborted.")
+						print("Returning to normal in 5 seconds...")
+						print("EasterEggs disabled for this session.")
+						sleep(5)
+						conf_vars['eastereggs'] = "False"
+#Something right here is fucky
+	def replace_track(self):
+		global conf_vars
+		from SupplementaryAPI import APIHandler
+		q = APIHandler()
+		q.QueueTrack(conf_vars['access_token'], "3CkL7Dfv07KjdL1wbC1m8i", current_api_info['devid'])
+		q.SkipSong(conf_vars['access_token'])
+		q.LoopTrack(conf_vars["access_token"], current_api_info['devid'])
 
-def lamemusic():
-	global conf_vars
-	devid = current_api_info['devid']
-	queueURL = "https://api.spotify.com/v1/me/player/queue?uri="
-	skipURL = "https://api.spotify.com/v1/me/player/next"
-	track = "spotify:track:55WLWX71YkHt2tSucNIf1g"
-	postUrl = queueURL + track.replace(":", "%3A") + f"&deviceid={devid}"
-	loopPostURL = "https://api.spotify.com/v1/me/player/repeat?state=track" + f"&deviceid={devid}"
-	try:
-		response = requests.post(
-			postUrl,
-			headers={
-				"Authorization": f"Bearer {conf_vars['access_token']}"},
-			timeout=10)
-		response = requests.post(
-			skipURL,
-			headers={
-				"Authorization": f"Bearer {conf_vars['access_token']}"},
-				timeout=10)
-		response = requests.put(
-			loopPostURL,
-			headers={
-				"Authorization": f"Bearer {conf_vars['access_token']}"},
-				timeout=10)
-
-	except:
-		clearTitle("Couldn't correct music taste.")
-		print("Couldn't execute API calls for changing music.")
-		print("Easter Eggs disabled for the rest of this session.")
-		print("Continuing in 5 seconds.")
-		sleep(5)
-		conf_vars['eastereggs'] = "false"
 
 def main():
 	global current_api_info
+	global toBePaused
 	global last_track_id
 	global eligibility
 	global access_token
+	global response_valid
+	response_valid = False
 	try:
-		try:
-			current_api_info = get_api_information(access_token)
+		while response_valid == False:
 			try:
-				errorfinder()
-			except:
-				clearTitle("Errorfinder failed to run.")
-				log.SaveDiagInfo("Main/ErrorFinder - Failed", response.json, diaglog)
-		except:
-			clearTitle("getApiInformation failed to run.")
-			log.SaveDiagInfo("main/get_api_information-Failed", "Failed to run correctly. (Run the function outside of any exception catchers.)", diaglog)
+				current_api_info = new_get_player_info(access_token)
+				try:
+					errorfinder()
+					response_valid = True
+				except KeyboardInterrupt:
+					log.SaveDiagInfo("Main - get_player_info" "KeyboardInterrupt [-21] | Pause Variable set to True", diaglog)
+					toBePaused = True
+				except:
+					clearTitle("Errorfinder failed to run.")
+					log.SaveDiagInfo("Main - Errorfinder", f"[2nd level exception]\n{response.json}", diaglog)
+			except KeyboardInterrupt:
+				log.SaveDiagInfo("Main - get_player_info" "KeyboardInterrupt. [post-errorfinder] | Pause Variable set to True", diaglog)
+				toBePaused = True
+			except NoTrack:
+				clearTitle("Idle - SpotiPy Current Song Info")
+				print("There is currently no music playing.\nSpotiPy Current Song Info")
+				print(f"Ver {conf_vars['version_no']}")
+				timeout2 = 5
+				if conf_vars['deep_idle'].capitalize() == "True": 
+					print("Deep Idle Enabled. API Requests limited to once every 30 seconds.")
+					timeout2 = 30
+				print("Waiting for music to play.")
+				sleep(timeout2)
+				print("\nChecking for song info...")
+				sleep(1)
+			except DJPlaying:
+				clearTitle("[Spotify DJ] Your DJ X is talking.")
+				print("Let's see what X is cooking.\n Program will resume when X is done talking.")
+				sleep(conf_vars['sleeptime'])
+			except TimestampInvalid:
+				pass
+			except ResponseCodeInvalid:
+				pass
+			except TokenExpired:
+				tokenrefresher()
+			except ConnectionBad:
+				clearTitle("Internet Connection Error.")
+				print("There is a problem with the connection to spotify's API.\nPlease check that you're connected to the internet, with internet access.")
+			except TransferringPlayback:
+				clearTitle("Spotify is transferring playback.")
+				print("Please wait while Spotify switches songs.\n\nSpotiPy Current Song Info")
+			except OtherAPIError:
+				clearTitle("Other API Error")
+				print("An unknown API error has occured.")
+				log.SaveDiagInfo("main-except-OtherAPIError", "None", diaglog)
+			except NoReply:
+				log.SaveDiagInfo("main-exception-NoReply", "No reply recieved from Spotify's API.", diaglog)
+			except CurrentlyPlayingType:
+				clearTitle("SCSI is paused.")
+				print("You are currently not playing music.")
+				print("This could be a podcast or something else.")
+				print("Play some music, and we'll get back on track.")
+				log.SaveDiagInfo("main-CurrentlyPlayingType", "None", diaglog)
+			except JsonResponseError:
+				clearTitle("JSON Response Error")
+				print("Something was wrong with Spotify's API response.")
+			#except:
+			#	log.SaveDiagInfo("Main | New API Grabber", "Catch-All-Exception", diaglog)
+			#	clearTitle("Failed to acquire API Information")
+			#	print("There was a problem running the new get player info function.\n Check for uncaught custom exceptions.")
+		#except:
+		#	clearTitle("get_player_info failed to run.")
+		#	log.SaveDiagInfo("Main - get_player_info", "[Uncaught Exception]. (Try running the function outside of any exception catchers.)", diaglog)
 		if conf_vars['eastereggs'].lower() == "true":
-			try:
-				if "Yameii Online" in current_api_info['artists']:
-					lamemusic()
-			except:
-				return None
+			if "Yameii Online" in current_api_info['artists']:
+				try:
+					a = replace_track()
+				except:
+					conf_vars['eastereggs'] = "False"
+					log.SaveDiagInfo("Main-Replace_Track()", "Fail Condition; Easter Eggs Disabled.", diaglog)
+
 		current_track_id = current_api_info['id']
 
 		if conf_vars['logging'] == "True":
@@ -494,38 +491,40 @@ def main():
 		
 		os.system("cls")
 		
-		print("♪ Now Playing ♪".center(70))
+		print("===== ♪ Now Playing ♪ =====".center(70))
 		
 		try:
-			print(f"Pb Device: {current_api_info['devicename']} ({current_api_info['devtype'].capitalize()}) | {current_api_info['volume']}% Volume")
+			print(f"Device: {current_api_info['devicename']} ({current_api_info['devtype']}) | {current_api_info['volume']}% Volume")
 		except:
-			print(f"Pb Device: Unavailable | Volume: Unavailable")
+			print(f"Device: Unavailable | Volume: Unavailable")
 
-		if current_api_info['playing']: print("Pb Status: Playing") 
-		else: print("Pb Status: Paused")
+		if current_api_info['playing']: print("Status: Playing") 
+		else: print("Status: Paused")
 		
-		if len(current_api_info['artists']) > 50: print(f"Artist(s):{current_api_info['artists'][:50]}...")
-		else: print(f"Artist(s): {current_api_info['artists']}")
+		if len(current_api_info['artists']) > 50: 
+			print(f"Artist(s):{current_api_info['artists'][:50]}...")
+		else: 
+			print(f"Artist(s): {current_api_info['artists']}")
 		
 		if len(current_api_info['track_name']) > 50:
 			print(f"Song: {current_api_info['track_name'][:50]}...")
 		else:
 			print(f"Song: {current_api_info['track_name']}")
 
-		if current_api_info['albumtype'] == "album": 
+		if current_api_info['albumtype'] == "Album": 
 			if len(current_api_info['album']) > 50:
-				print(f"Album: {current_api_info['album'][:50]}... | Track {current_api_info['track_no']}")
+				print(f"Album: {current_api_info['album'][:45]}... | Track {current_api_info['track_no']}")
 			else: print(f"Album: {current_api_info['album']} | Track {current_api_info['track_no']}") 
-		if current_api_info['albumtype'] != "album":
+		if current_api_info['albumtype'] != "Album":
 			if len(current_api_info['album']) > 50:
-				print(f"Album: {current_api_info['album'][:50]}... [{current_api_info['albumtype'].capitalize()}]")
-			else: print(f"Album: {current_api_info['album']} [{current_api_info['albumtype'].capitalize()}]") 
+				print(f"Album: {current_api_info['album'][:45]}... [{current_api_info['albumtype']}]")
+			else: print(f"Album: {current_api_info['album']} [{current_api_info['albumtype']}]") 
 		
 		if conf_vars['progresstype'].capitalize() == "Remainder": print(f"Duration: {current_api_info['duration']} / {current_api_info['progress']}")
 		else: print(f"Duration: {current_api_info['progress']} / {current_api_info['duration']}")
 		
-		if current_api_info['explicit']: print("Explicit: Yes")
-		else: print("Explicit: No")
+		if current_api_info['explicit']: print("Explicit Content: Yes")
+		else: print("Explicit Content: No")
 		
 		if current_api_info['release_precision'] == "day":
 			if conf_vars['date_check'].capitalize == "True": 
@@ -540,16 +539,20 @@ def main():
 		
 		if conf_vars['tracklink'] == "True": print(f"Play it Here: {current_api_info['link']}")
 		
-		print("Track ID: " + current_track_id) 
+		print("Song ID: " + current_track_id) 
 		
-		print(f"Playback Modified At: {datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime('%m-%d-%Y @ %X')}")
+		print(f"Status Modified At: {datetime.fromtimestamp(current_api_info['clock'] / 1000).strftime('%m-%d-%Y @ %X')}")
 
 		#do not touch this please
 		sleep(int(conf_vars['sleeptime']))
 	except KeyboardInterrupt:
-		programPauser()
-
-
+		log.SaveDiagInfo("Main - TL KeyboardInterrupt", "Pause Variable set to True", diaglog)
+		toBePaused = True
+	except RecursionError:
+		log.SaveDiagInfo("Main - Recursion Catch", "Closing Program", diaglog)
+		quit(69)
+	#except:
+	#	print("Catch-All+ Error")
 
 
 
@@ -563,4 +566,31 @@ if __name__ == '__main__':
 		os.system(f"mode con cols=70 lines={lines}")
 	while True:
 		main()
+		if toBePaused:
+			log.SaveDiagInfo("toBePaused [Pause State: On]", "Pause Initiated", diaglog)
+			clearTitle(f"Idle - Spotipy Current Song Info v.{conf_vars['version_no']}")
+			print("SCSI is paused.")
+			try:
+				print(f"Last Song: {current_api_info['track_name']} by {current_api_info['artists']}\nAlbum: {current_api_info['album']}")
+			except:
+				print("Last Song: -----\nAlbum: -----")
+			print("Press CTRL + C to unpause.\n")
+			print(f"S.C.S.I version {conf_vars['version_no']}, python ver {platform.python_version()}")
+			try:
+				while True:
+					sleep(1000)
+			except KeyboardInterrupt:
+				toBePaused = False
+				try:
+					log.SaveDiagInfo("toBePaused [Pause State: Waiting...]", "Resuming Program.", diaglog)
+					clearTitle("Resuming...")
+					print("Resuming program in 5 seconds.")
+					print("Press CTRL + C again to close the program.")
+					sleep(5)
+					log.SaveDiagInfo("toBePaused [Pause State: Off]", "Pause Off.", diaglog)
+				except KeyboardInterrupt:
+					log.SaveDiagInfo("toBePaused [Exiting Program]", "Program Stopping...", diaglog)
+					clearTitle("Stopping...")
+					print("Stopping...")
+					quit()
 

@@ -30,8 +30,7 @@ class TokenRefresherV2():
                 print(0/0)
             print(f"Old Token: {old_token}...")
             print(f"New Token: {conf_vars['access_token'][:10]}...")
-            print("Refresh Successful.\nContinuing in a moment.")
-            time.sleep(5)
+            print("Refresh Successful.\nContinuing.")
             os.system('cls')
             return conf_vars['access_token']
         except:
